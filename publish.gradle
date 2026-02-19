@@ -4,14 +4,34 @@ def nativeName = wpilibTools.platformMapper.wpilibClassifier;
 def artifactGroupId = 'org.photonvision'
 def baseArtifactId = "rubik_jni"
 
+def tfliteLicense = file("$rootDir/TFLite-License")
+def license = file("$rootDir/LICENSE")
+
 def jniType = project.findProperty("PublishType") ?: "";
 println("Building with JNI publish type: " + jniType);
 
 task nativeLibraryJar(type: Jar, dependsOn: copyNativeLibrary) {
     archiveClassifier = nativeName + jniType
     from outputsFolder
+    from license
+    from tfliteLicense
 }
 build.dependsOn nativeLibraryJar
+
+jar {
+    from license
+    from tfliteLicense
+}
+
+javadocJar {
+    from license
+    from tfliteLicense
+}
+
+sourcesJar {
+    from license
+    from tfliteLicense
+}
 
 publishing {
     repositories {
