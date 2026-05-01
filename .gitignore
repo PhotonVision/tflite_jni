@@ -5,3 +5,13 @@ cmake_build
 bin
 *.onnx
 *.jar
+
+shell.nix
+
+.classpath
+.project
+.settings
+
+compile_commands.json
+
+src/test/resources/images/bus_with_results.jpg
