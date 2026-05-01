@@ -5,3 +5,11 @@ cmake_build
 bin
 *.onnx
 *.jar
+
+shell.nix
+
+.classpath
+.project
+.settings
+
+compile_commands.json

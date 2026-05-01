@@ -2,7 +2,7 @@ apply plugin: 'maven-publish'
 
 def nativeName = wpilibTools.platformMapper.wpilibClassifier;
 def artifactGroupId = 'org.photonvision'
-def baseArtifactId = "rubik_jni"
+def baseArtifactId = "tflite_jni"
 
 def tfliteLicense = file("$rootDir/TFLite-License")
 def license = file("$rootDir/LICENSE")
@@ -64,6 +64,6 @@ publishing {
 
 tasks.withType(PublishToMavenRepository) {
     doFirst {
-        println("Publishing rubik-jni to " + repository.url)
+        println("Publishing tflite-jni to " + repository.url)
     }
 }
