@@ -24,7 +24,8 @@ import org.opencv.core.Size;
 public class TFLiteJNI {
     public static enum TFLiteSource {
         QNN(1),
-        CPU(2);
+        MESA(2),
+        CPU(3);
 
         private int value = 0;
 
