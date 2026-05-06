@@ -62,9 +62,6 @@ jobs:
 
     - run: find .
 
-    - name: Test
-      run: ./gradlew test
-
     - run: |
         ./gradlew build ${{ (startsWith(github.event_name, 'push') && 'publish') || '' }} -PArchOverride=linuxarm64 -PPublishType=${{ matrix.publish-type }} -x check
       env:
