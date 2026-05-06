@@ -3,7 +3,7 @@ plugins {
     id "com.diffplug.spotless" version "8.1.0"
     id "org.wpilib.WPILibRepositoriesPlugin" version "2027.0.0"
     id "org.wpilib.GradleRIO" version "2027.0.0-alpha-5"
-    id 'org.photonvision.tools.WpilibTools' version '4.1.0-photon'
+    id 'org.photonvision.tools.WpilibTools' version '4.1.1-photon'
 }
 
 allprojects {
@@ -46,9 +46,6 @@ dependencies {
     testImplementation wpilibTools.deps.wpilibJava("cscore")
 
     implementation wpilibTools.deps.wpilibOpenCvJava(wpi.versions.opencvVersion.get())
-    // testImplementation group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: wpi.versions.jacksonVersion.get()
-    // testImplementation group: "com.fasterxml.jackson.core", name: "jackson-core", version: wpi.versions.jacksonVersion.get()
-    // testImplementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: wpi.versions.jacksonVersion.get()
 }
 
 tasks.withType(JavaCompile) {
