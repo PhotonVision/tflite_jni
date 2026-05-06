@@ -39,6 +39,7 @@ dependencies {
 
     implementation wpilibTools.deps.wpilibJava("wpiutil")
     testImplementation wpilibTools.deps.wpilibJava("cscore")
+    testImplementation 'org.photonvision:photontargeting-java:v2026.3.2'
 
     implementation wpilibTools.deps.wpilibOpenCvJava(openCVversion)
 }
