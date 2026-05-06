@@ -31,7 +31,7 @@ enum ModelVersion { YOLOV8 = 1, YOLOV11 = 2 };
 /**
  * Where should TFLite run inference.
  */
-enum TFLiteSource { RUBIK = 1, CPU = 2 };
+enum TFLiteSource { RUBIK = 1, MESA = 2, CPU = 3 };
 
 inline bool uses_delegate(TFLiteSource source) { return source != CPU; }
 
@@ -62,7 +62,7 @@ struct TFLiteDetector {
   TfLiteInterpreter* interpreter;
   TfLiteDelegate* delegate;
   TfLiteModel* model;
-  TFLiteSource* source;
+  TFLiteSource source;
   ModelVersion version;
 };
 
