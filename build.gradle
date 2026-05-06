@@ -86,10 +86,14 @@ ext.outputsFolder = file("$buildDir/outputs")
 
 println("Building for $nativeName")
 
+tasks.register('buildMesa', Exec) {
+    commandLine 'sh', "${projectDir}/build-mesa.sh"
+}
+
 tasks.register('copyNativeLibrary', Sync) {
-    from "${projectDir}/cmake_build/lib"
+    from "${projectDir}/cmake_build/lib", "${projectDir}/mesa_build/build/src/gallium"
     into "${outputsFolder}/${nativeName}/shared"
-    include "**/*.so"
+    include "**/**/*.so"
 
     // And flatten, since windows is stupid
     eachFile {
@@ -129,7 +133,7 @@ spotless {
     format 'misc', {
         target fileTree('.') {
             include '**/*.md', '**/.gitignore'
-            exclude '**/build/**', '**/build-*/**'
+            exclude '**/build/**', '**/build-*/**', '**/mesa_build/**'
         }
         trimTrailingWhitespace()
         indentWithSpaces(2)

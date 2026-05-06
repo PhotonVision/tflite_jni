@@ -80,7 +80,7 @@ jobs:
     - name: Set up build environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake build-essential default-jdk openjdk-17-jdk ninja-build
+        sudo apt-get install -y cmake build-essential default-jdk openjdk-17-jdk ninja-build git 
         ls
         find .
         pwd
@@ -89,6 +89,11 @@ jobs:
 
     - run: find .
 
+    - name: Build Mesa
+      if: matrix.os == 'ubuntu-24.04-arm'
+      run: |
+        sudo apt-get build-dep -y mesa
+        ./gradlew buildMesa
 
     - run: |
         ./gradlew build ${{ (startsWith(github.event_name, 'push') && 'publish') || '' }} -PArchOverride=${{ matrix.platform }} -PPublishType=${{ matrix.publish-type }} -x check

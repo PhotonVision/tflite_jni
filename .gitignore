@@ -1,5 +1,6 @@
 build
 cmake_build
+mesa_build
 .gradle
 *.vscode
 bin
@@ -13,3 +14,4 @@ shell.nix
 .settings
 
 compile_commands.json
+
