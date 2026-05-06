@@ -59,10 +59,11 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
 
   // Find the detection result class
   jclass localClass =
-      env->FindClass("org/photonvision/rubik/RubikJNI$RubikResult");
+      env->FindClass("org/photonvision/tflite/TFLiteJNI$TFLiteResult");
   if (!localClass) {
     std::printf(
-        "Couldn't find class org/photonvision/rubik/RubikJNI$RubikResult!\n");
+        "Couldn't find class "
+        "org/photonvision/tflite/TFLiteJNI$TFLiteResult!\n");
     return JNI_ERR;
   }
 
@@ -97,7 +98,7 @@ static jobject MakeJObject(JNIEnv* env, const DetectResult& result) {
   jmethodID constructor =
       env->GetMethodID(detectionResultClass, "<init>", "(IIIIFIF)V");
   if (!constructor) {
-    std::printf("ERROR: Could not find constructor for RubikResult!\n");
+    std::printf("ERROR: Could not find constructor for TFLiteResult!\n");
     return nullptr;
   }
 
@@ -114,13 +115,13 @@ void ThrowRuntimeException(JNIEnv* env, const char* message) {
 }
 
 /*
- * Class:     org_photonvision_rubik_RubikJNI
+ * Class:     org_photonvision_tflite_TFLiteJNI
  * Method:    create
- * Signature: (Ljava/lang/String;I)J
+ * Signature: (Ljava/lang/String;II)J
  */
 JNIEXPORT jlong JNICALL
-Java_org_photonvision_rubik_RubikJNI_create
-  (JNIEnv* env, jobject obj, jstring modelPath, jint version)
+Java_org_photonvision_tflite_TFLiteJNI_create
+  (JNIEnv* env, jobject obj, jstring modelPath, jint version, jint source)
 {
   const char* model_name = env->GetStringUTFChars(modelPath, nullptr);
   if (model_name == nullptr) {
@@ -141,6 +142,18 @@ Java_org_photonvision_rubik_RubikJNI_create
 
   ModelVersion model_version = static_cast<ModelVersion>(version_int);
 
+  // Validate source
+  int source_int = static_cast<int>(source);
+
+  // This should be updated whenever a new model version is added
+  if (source_int < TFLiteSource::RUBIK || source_int > TFLiteSource::CPU) {
+    ThrowRuntimeException(env, "Invalid TFLite source specified");
+    env->ReleaseStringUTFChars(modelPath, model_name);
+    return 0;
+  }
+
+  TFLiteSource tflite_source = static_cast<TFLiteSource>(source_int);
+
   // Load the model
   TfLiteModel* model = TfLiteModelCreateFromFile(model_name);
   if (!model) {
@@ -151,61 +164,79 @@ Java_org_photonvision_rubik_RubikJNI_create
 
   DEBUG_PRINT("INFO: Loaded model file '%s'\n", model_name);
 
-  // Create external delegate options
-  // We just have to trust that this creates okay, but conveniently if it fails
-  // the check when we insert options will catch it.
-  TfLiteExternalDelegateOptions delegateOptsValue =
-      TfLiteExternalDelegateOptionsDefault("libQnnTFLiteDelegate.so");
-
-  TfLiteExternalDelegateOptions* delegateOpts = &delegateOptsValue;
-
-  // See
-  // https://docs.qualcomm.com/bundle/publicresource/topics/80-70014-54/external-delegate-options-for-qnn-delegate.html
-  // for what the various delegate options are
-  if (TfLiteExternalDelegateOptionsInsert(delegateOpts, "backend_type",
-                                          "htp") != kTfLiteOk) {
-    ThrowRuntimeException(env, "Failed to set backend type to htp");
-    env->ReleaseStringUTFChars(modelPath, model_name);
-    return 0;
-  }
-
-  if (TfLiteExternalDelegateOptionsInsert(delegateOpts, "htp_use_conv_hmx",
-                                          "1") != kTfLiteOk) {
-    ThrowRuntimeException(env, "Failed to enable convolutions");
-    env->ReleaseStringUTFChars(modelPath, model_name);
-    return 0;
-  }
-
-  if (TfLiteExternalDelegateOptionsInsert(delegateOpts, "htp_performance_mode",
-                                          "2") != kTfLiteOk) {
-    ThrowRuntimeException(env, "Failed to set htp performance mode");
-    env->ReleaseStringUTFChars(modelPath, model_name);
-    return 0;
-  }
-
-  // Create the delegate
-  TfLiteDelegate* delegate = TfLiteExternalDelegateCreate(delegateOpts);
-
-  if (!delegate) {
-    ThrowRuntimeException(env, "Failed to create external delegate");
-    env->ReleaseStringUTFChars(modelPath, model_name);
-    return 0;
-  } else {
-    DEBUG_PRINT("INFO: Created external delegate\n");
-  }
-
-  DEBUG_PRINT("INFO: Loaded external delegate\n");
-
   // Create interpreter options
   TfLiteInterpreterOptions* interpreterOpts = TfLiteInterpreterOptionsCreate();
   if (!interpreterOpts) {
     ThrowRuntimeException(env, "Failed to create interpreter options");
-    TfLiteExternalDelegateDelete(delegate);
     env->ReleaseStringUTFChars(modelPath, model_name);
     return 0;
   }
 
-  TfLiteInterpreterOptionsAddDelegate(interpreterOpts, delegate);
+  // Create TFLiteDetector object
+  TFLiteDetector* detector = new TFLiteDetector;
+
+  if (uses_delegate(tflite_source)) {
+    TfLiteDelegate* delegate;
+    // Create external delegate options
+    // We just have to trust that this creates okay, but conveniently if it
+    // fails the check when we insert options will catch it.
+    TfLiteExternalDelegateOptions delegateOptsValue;
+    TfLiteExternalDelegateOptions* delegateOpts;
+    if (tflite_source == RUBIK) {
+      delegateOptsValue =
+          TfLiteExternalDelegateOptionsDefault("libQnnTFLiteDelegate.so");
+
+      delegateOpts = &delegateOptsValue;
+
+      // See
+      // https://docs.qualcomm.com/bundle/publicresource/topics/80-70014-54/external-delegate-options-for-qnn-delegate.html
+      // for what the various delegate options are
+      if (TfLiteExternalDelegateOptionsInsert(delegateOpts, "backend_type",
+                                              "htp") != kTfLiteOk) {
+        ThrowRuntimeException(env, "Failed to set backend type to htp");
+        env->ReleaseStringUTFChars(modelPath, model_name);
+        return 0;
+      }
+
+      if (TfLiteExternalDelegateOptionsInsert(delegateOpts, "htp_use_conv_hmx",
+                                              "1") != kTfLiteOk) {
+        ThrowRuntimeException(env, "Failed to enable convolutions");
+        env->ReleaseStringUTFChars(modelPath, model_name);
+        return 0;
+      }
+
+      if (TfLiteExternalDelegateOptionsInsert(
+              delegateOpts, "htp_performance_mode", "2") != kTfLiteOk) {
+        ThrowRuntimeException(env, "Failed to set htp performance mode");
+        env->ReleaseStringUTFChars(modelPath, model_name);
+        return 0;
+      }
+    } else if (tflite_source == MESA) {
+      delegateOptsValue = TfLiteExternalDelegateOptionsDefault(
+          "/opt/photonvision/libteflon.so");
+
+      delegateOpts = &delegateOptsValue;
+    } else {
+      ThrowRuntimeException(env, "Invalid source, no delegate found.");
+    }
+
+    // Create the delegate
+    delegate = TfLiteExternalDelegateCreate(delegateOpts);
+
+    if (!delegate) {
+      ThrowRuntimeException(env, "Failed to create external delegate");
+      env->ReleaseStringUTFChars(modelPath, model_name);
+      return 0;
+    } else {
+      DEBUG_PRINT("INFO: Created external delegate\n");
+    }
+
+    DEBUG_PRINT("INFO: Loaded external delegate\n");
+
+    TfLiteInterpreterOptionsAddDelegate(interpreterOpts, delegate);
+
+    detector->delegate = delegate;
+  }
 
   // Create the interpreter
   TfLiteInterpreter* interpreter =
@@ -214,42 +245,45 @@ Java_org_photonvision_rubik_RubikJNI_create
 
   if (!interpreter) {
     ThrowRuntimeException(env, "Failed to create interpreter");
-    TfLiteExternalDelegateDelete(delegate);
+    if (uses_delegate(tflite_source)) {
+      TfLiteExternalDelegateDelete(detector->delegate);
+    }
     env->ReleaseStringUTFChars(modelPath, model_name);
     return 0;
   }
 
-  // Modify graph with delegate
-  if (TfLiteInterpreterModifyGraphWithDelegate(interpreter, delegate) !=
-      kTfLiteOk) {
-    ThrowRuntimeException(env, "Failed to modify graph with delegate");
-    TfLiteInterpreterDelete(interpreter);
-    TfLiteExternalDelegateDelete(delegate);
-    env->ReleaseStringUTFChars(modelPath, model_name);
-    return 0;
-  } else {
-    DEBUG_PRINT("INFO: Modified graph with external delegate\n");
+  if (uses_delegate(tflite_source)) {
+    // Modify graph with delegate
+    if (TfLiteInterpreterModifyGraphWithDelegate(
+            interpreter, detector->delegate) != kTfLiteOk) {
+      ThrowRuntimeException(env, "Failed to modify graph with delegate");
+      TfLiteInterpreterDelete(interpreter);
+      TfLiteExternalDelegateDelete(detector->delegate);
+      env->ReleaseStringUTFChars(modelPath, model_name);
+      return 0;
+    } else {
+      DEBUG_PRINT("INFO: Modified graph with external delegate\n");
+    }
   }
 
   // Allocate tensors
   if (TfLiteInterpreterAllocateTensors(interpreter) != kTfLiteOk) {
     ThrowRuntimeException(env, "Failed to allocate tensors");
     TfLiteInterpreterDelete(interpreter);
-    TfLiteExternalDelegateDelete(delegate);
+    if (uses_delegate(tflite_source)) {
+      TfLiteExternalDelegateDelete(detector->delegate);
+    }
     env->ReleaseStringUTFChars(modelPath, model_name);
     return 0;
   }
 
   env->ReleaseStringUTFChars(modelPath, model_name);
 
-  // Create RubikDetector object
-  RubikDetector* detector = new RubikDetector;
   detector->interpreter = interpreter;
-  detector->delegate = delegate;
   detector->model = model;
   detector->version = model_version;
 
-  // Convert RubikDetector pointer to jlong
+  // Convert TFLiteDetector pointer to jlong
   jlong ptr = reinterpret_cast<jlong>(detector);
 
   DEBUG_PRINT("INFO: TensorFlow Lite initialization completed successfully\n");
@@ -258,18 +292,18 @@ Java_org_photonvision_rubik_RubikJNI_create
 }
 
 /*
- * Class:     org_photonvision_rubik_RubikJNI
+ * Class:     org_photonvision_tflite_TFLiteJNI
  * Method:    destroy
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL
-Java_org_photonvision_rubik_RubikJNI_destroy
+Java_org_photonvision_tflite_TFLiteJNI_destroy
   (JNIEnv* env, jclass, jlong ptr)
 {
-  RubikDetector* detector = reinterpret_cast<RubikDetector*>(ptr);
+  TFLiteDetector* detector = reinterpret_cast<TFLiteDetector*>(ptr);
 
   if (!detector) {
-    ThrowRuntimeException(env, "Invalid RubikDetector pointer");
+    ThrowRuntimeException(env, "Invalid TFLiteDetector pointer");
     return;
   }
 
@@ -280,26 +314,26 @@ Java_org_photonvision_rubik_RubikJNI_destroy
   // We don't need to delete the version since it's just an enum value not a
   // pointer
 
-  // Delete the RubikDetector object
+  // Delete the TFLiteDetector object
   delete detector;
 
   DEBUG_PRINT("INFO: Object Detection instance destroyed successfully\n");
 }
 
 /*
- * Class:     org_photonvision_rubik_RubikJNI
+ * Class:     org_photonvision_tflite_TFLiteJNI
  * Method:    detect
  * Signature: (JJDD)[Ljava/lang/Object;
  */
 JNIEXPORT jobjectArray JNICALL
-Java_org_photonvision_rubik_RubikJNI_detect
+Java_org_photonvision_tflite_TFLiteJNI_detect
   (JNIEnv* env, jobject obj, jlong ptr, jlong input_cvmat_ptr,
    jdouble boxThresh, jdouble nmsThreshold)
 {
-  RubikDetector* detector = reinterpret_cast<RubikDetector*>(ptr);
+  TFLiteDetector* detector = reinterpret_cast<TFLiteDetector*>(ptr);
 
   if (!detector) {
-    ThrowRuntimeException(env, "Invalid RubikDetector pointer");
+    ThrowRuntimeException(env, "Invalid TFLiteDetector pointer");
     return nullptr;
   }
 
@@ -388,18 +422,18 @@ Java_org_photonvision_rubik_RubikJNI_detect
 }
 
 /*
- * Class:     org_photonvision_rubik_RubikJNI
+ * Class:     org_photonvision_tflite_TFLiteJNI
  * Method:    isQuantized
  * Signature: (J)Z
  */
 JNIEXPORT jboolean JNICALL
-Java_org_photonvision_rubik_RubikJNI_isQuantized
+Java_org_photonvision_tflite_TFLiteJNI_isQuantized
   (JNIEnv* env, jobject obj, jlong ptr)
 {
-  RubikDetector* detector = reinterpret_cast<RubikDetector*>(ptr);
+  TFLiteDetector* detector = reinterpret_cast<TFLiteDetector*>(ptr);
 
   if (!detector) {
-    ThrowRuntimeException(env, "Invalid RubikDetector pointer");
+    ThrowRuntimeException(env, "Invalid TFLiteDetector pointer");
     return JNI_FALSE;
   }
 

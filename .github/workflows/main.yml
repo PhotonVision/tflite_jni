@@ -16,7 +16,6 @@ jobs:
       - uses: actions/checkout@v6
       - uses: gradle/actions/wrapper-validation@v4
   build:
-    runs-on: ubuntu-24.04-arm
     needs: [validation]
     strategy:
       fail-fast: false
@@ -25,16 +24,41 @@ jobs:
           - build-type: Release
             publish-type: ""
             extra-cmake-args: ""
-            jar-name: "Release"
+            jar-name: "ReleaseArm64"
+            os: ubuntu-24.04-arm
+            platform: "linuxarm64"
           - build-type: Debug
             publish-type: "debug"
             extra-cmake-args: ""
-            jar-name: "Debug"
+            jar-name: "DebugArm64"
+            os: ubuntu-24.04-arm
+            platform: "linuxarm64"
           - build-type: Debug
             publish-type: "debugwithasan"
             extra-cmake-args: "-DENABLE_ASAN=ON"
-            jar-name: "DebugWithAsan"
+            jar-name: "DebugWithAsanArm64"
+            os: ubuntu-24.04-arm
+            platform: "linuxarm64"
+          - build-type: Release
+            publish-type: ""
+            extra-cmake-args: ""
+            jar-name: "ReleaseX64"
+            os: ubuntu-24.04
+            platform: "linuxx86-64"
+          - build-type: Debug
+            publish-type: "debug"
+            extra-cmake-args: ""
+            jar-name: "DebugX64"
+            os: ubuntu-24.04
+            platform: "linuxx86-64"
+          - build-type: Debug
+            publish-type: "debugwithasan"
+            extra-cmake-args: "-DENABLE_ASAN=ON"
+            jar-name: "DebugWithAsanX64"
+            os: ubuntu-24.04
+            platform: "linuxx86-64"
 
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
       with:
@@ -50,21 +74,29 @@ jobs:
         java-version: 17
         distribution: temurin
 
+    - name: Install sccache
+      uses: mozilla-actions/sccache-action@v0.0.9
+
     - name: Set up build environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake build-essential default-jdk openjdk-17-jdk
+        sudo apt-get install -y cmake build-essential default-jdk openjdk-17-jdk ninja-build git
         ls
         find .
         pwd
-        cmake -B cmake_build -S . -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_INSTALL_PREFIX=cmake_build -DOPENCV_ARCH=linuxarm64 ${{ matrix.extra-cmake-args }}
+        cmake --preset with-sccache -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DOPENCV_ARCH=${{ matrix.platform }} ${{ matrix.extra-cmake-args }}
         cmake --build cmake_build --target install -- -j 4
 
     - run: find .
 
+    - name: Build Mesa
+      if: matrix.os == 'ubuntu-24.04-arm'
+      run: |
+        sudo apt-get build-dep -y mesa
+        ./gradlew buildMesa
 
     - run: |
-        ./gradlew build ${{ (startsWith(github.event_name, 'push') && 'publish') || '' }} -PArchOverride=linuxarm64 -PPublishType=${{ matrix.publish-type }} -x check
+        ./gradlew build ${{ (startsWith(github.event_name, 'push') && 'publish') || '' }} -PArchOverride=${{ matrix.platform }} -PPublishType=${{ matrix.publish-type }} -x check
       env:
         ARTIFACTORY_API_KEY: ${{ secrets.ARTIFACTORY_API_KEY }}
 

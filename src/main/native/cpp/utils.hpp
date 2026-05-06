@@ -29,6 +29,13 @@
 enum ModelVersion { YOLOV8 = 1, YOLOV11 = 2 };
 
 /**
+ * Where should TFLite run inference.
+ */
+enum TFLiteSource { RUBIK = 1, MESA = 2, CPU = 3 };
+
+inline bool uses_delegate(TFLiteSource source) { return source != CPU; }
+
+/**
  * Structure representing a bounding box.
  *
  * x1, y1: Top-left corner coordinates.
@@ -44,17 +51,18 @@ struct BoundingBox {
 };
 
 /**
- * Structure representing a Rubik detector instance.
+ * Structure representing a TFLite detector instance.
  *
  * interpreter: Pointer to the TensorFlow Lite interpreter.
  * delegate: Pointer to the TensorFlow Lite delegate (if any).
  * model: Pointer to the TensorFlow Lite model.
  * version: The version of the model being used.
  */
-struct RubikDetector {
+struct TFLiteDetector {
   TfLiteInterpreter* interpreter;
   TfLiteDelegate* delegate;
   TfLiteModel* model;
+  TFLiteSource source;
   ModelVersion version;
 };
 

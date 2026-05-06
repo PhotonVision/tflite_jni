@@ -1,7 +1,16 @@
 build
 cmake_build
+mesa_build
 .gradle
 *.vscode
 bin
 *.onnx
 *.jar
+
+shell.nix
+
+.classpath
+.project
+.settings
+
+compile_commands.json
