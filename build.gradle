@@ -2,7 +2,6 @@ plugins {
     id "java"
     id "com.diffplug.spotless" version "8.1.0"
     id "org.wpilib.WPILibRepositoriesPlugin" version "2027.0.0"
-    id "org.wpilib.GradleRIO" version "2027.0.0-alpha-5"
     id 'org.photonvision.tools.WpilibTools' version '4.1.1-photon'
 }
 
@@ -12,6 +11,7 @@ allprojects {
         mavenLocal()
         maven { url = "https://maven.photonvision.org/repository/internal/" }
     }
+    wpilibRepositories.use2027Repos()
     wpilibRepositories.addAllReleaseRepositories(it)
     wpilibRepositories.addAllDevelopmentRepositories(it)
 }
