@@ -212,7 +212,8 @@ Java_org_photonvision_tflite_TFLiteJNI_create
         return 0;
       }
     } else if (tflite_source == MESA) {
-      delegateOptsValue = TfLiteExternalDelegateOptionsDefault("/opt/photonvision/libteflon.so");
+      delegateOptsValue = TfLiteExternalDelegateOptionsDefault(
+          "/opt/photonvision/libteflon.so");
 
       delegateOpts = &delegateOptsValue;
     } else {
