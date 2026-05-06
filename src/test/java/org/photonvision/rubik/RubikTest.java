@@ -19,7 +19,6 @@ package org.photonvision.rubik;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import edu.wpi.first.util.CombinedRuntimeLoader;
 import java.io.IOException;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
@@ -29,6 +28,7 @@ import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+import org.photonvision.jni.CombinedRuntimeLoader;
 import org.photonvision.rubik.RubikJNI.RubikResult;
 
 public class RubikTest {
