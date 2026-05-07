@@ -99,3 +99,12 @@ jobs:
       with:
         name: libtflite-${{ matrix.build-type }}-${{ matrix.platform }}
         path: cmake_build/*.so
+
+  matrix-checker:
+    # This job always runs last to set the overall result based on the matrix jobs. If any matrix job failed, this job will fail.
+    # This makes it so that we don't need to add each matrix job individually to CI checks.
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: always()
+    steps:
+      - run: ${{!contains(needs.*.result, 'failure')}}
