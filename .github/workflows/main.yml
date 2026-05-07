@@ -22,39 +22,33 @@ jobs:
       matrix:
         include:
           - build-type: Release
-            publish-type: ""
-            extra-cmake-args: ""
-            jar-name: "ReleaseArm64"
             os: ubuntu-24.04-arm
             platform: "linuxarm64"
           - build-type: Debug
-            publish-type: "debug"
-            extra-cmake-args: ""
-            jar-name: "DebugArm64"
             os: ubuntu-24.04-arm
             platform: "linuxarm64"
-          - build-type: Debug
-            publish-type: "debugwithasan"
-            extra-cmake-args: "-DENABLE_ASAN=ON"
-            jar-name: "DebugWithAsanArm64"
+          - build-type: Asan
+            os: ubuntu-24.04-arm
+            platform: "linuxarm64"
+          - build-type: Ubsan
+            os: ubuntu-24.04-arm
+            platform: "linuxarm64"
+          - build-type: Tsan
             os: ubuntu-24.04-arm
             platform: "linuxarm64"
           - build-type: Release
-            publish-type: ""
-            extra-cmake-args: ""
-            jar-name: "ReleaseX64"
             os: ubuntu-24.04
             platform: "linuxx86-64"
           - build-type: Debug
-            publish-type: "debug"
-            extra-cmake-args: ""
-            jar-name: "DebugX64"
             os: ubuntu-24.04
             platform: "linuxx86-64"
-          - build-type: Debug
-            publish-type: "debugwithasan"
-            extra-cmake-args: "-DENABLE_ASAN=ON"
-            jar-name: "DebugWithAsanX64"
+          - build-type: Asan
+            os: ubuntu-24.04
+            platform: "linuxx86-64"
+          - build-type: Ubsan
+            os: ubuntu-24.04
+            platform: "linuxx86-64"
+          - build-type: Tsan
             os: ubuntu-24.04
             platform: "linuxx86-64"
 
@@ -84,7 +78,7 @@ jobs:
 
     - name: Build native code
       run: |
-        cmake --preset with-sccache -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DOPENCV_ARCH=${{ matrix.platform }} ${{ matrix.extra-cmake-args }}
+        cmake --preset with-sccache -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DOPENCV_ARCH=${{ matrix.platform }}
         cmake --build cmake_build --target install -- -j 4
 
     - name: Build and Test Java
@@ -92,7 +86,7 @@ jobs:
 
     - name: Publish
       run: |
-        ./gradlew build ${{ (startsWith(github.event_name, 'push') && 'publish') || '' }} -PArchOverride=${{ matrix.platform }} -PPublishType=${{ matrix.publish-type }} -x check
+        ./gradlew build ${{ (startsWith(github.event_name, 'push') && 'publish') || '' }} -PArchOverride=${{ matrix.platform }} -PPublishType=${{ ${{ matrix.build-type }}-${{ matrix.platform }} }} -x check
       env:
         ARTIFACTORY_API_KEY: ${{ secrets.ARTIFACTORY_API_KEY }}
 
@@ -103,5 +97,5 @@ jobs:
         path: ${{ github.workspace }}/build/libs/*.jar
     - uses: actions/upload-artifact@v4
       with:
-        name: librubik-${{ matrix.jar-name }}
+        name: librubik-${{ matrix.build-type }}-${{ matrix.platform }}
         path: cmake_build/*.so

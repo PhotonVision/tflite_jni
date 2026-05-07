@@ -11,19 +11,6 @@ set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
 set(CMAKE_BUILD_RPATH "$ORIGIN;$ORIGIN/../lib")
 set(CMAKE_INSTALL_RPATH "$ORIGIN")
 
-if(ENABLE_ASAN)
-    message(STATUS "BUILD WITH ADDRESS SANITIZER")
-    set(CMAKE_C_FLAGS_DEBUG
-        "${CMAKE_C_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined"
-    )
-    set(CMAKE_CXX_FLAGS_DEBUG
-        "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined"
-    )
-    set(CMAKE_LINKER_FLAGS_DEBUG
-        "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined"
-    )
-endif()
-
 set(BUILD_SHARED_LIBS ON)
 
 if(DEFINED ENV{JAVA_HOME})
@@ -56,7 +43,7 @@ set(OPENCV_VERSION "2027-4.13.0-3")
 # also valid: windowsx86-64
 
 # type can be "", "debug", "static", or "staticdebug"
-set(OPENCV_TYPE "debug")
+set(OPENCV_TYPE "")
 
 include(FetchContent)
 FetchContent_Declare(
