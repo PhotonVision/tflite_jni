@@ -176,7 +176,7 @@ Java_org_photonvision_tflite_TFLiteJNI_create
   // Create TFLiteDetector object
   TFLiteDetector* detector = new TFLiteDetector;
 
-  if (uses_delegate(tflite_source)) {
+  if (uses_external_delegate(tflite_source)) {
     TfLiteDelegate* delegate;
     // Create external delegate options
     // We just have to trust that this creates okay, but conveniently if it
@@ -235,14 +235,14 @@ Java_org_photonvision_tflite_TFLiteJNI_create
 
   if (!interpreter) {
     ThrowRuntimeException(env, "Failed to create interpreter");
-    if (uses_delegate(tflite_source)) {
+    if (uses_external_delegate(tflite_source)) {
       TfLiteExternalDelegateDelete(detector->delegate);
     }
     env->ReleaseStringUTFChars(modelPath, model_name);
     return 0;
   }
 
-  if (uses_delegate(tflite_source)) {
+  if (uses_external_delegate(tflite_source)) {
     // Modify graph with delegate
     if (TfLiteInterpreterModifyGraphWithDelegate(
             interpreter, detector->delegate) != kTfLiteOk) {
@@ -260,7 +260,7 @@ Java_org_photonvision_tflite_TFLiteJNI_create
   if (TfLiteInterpreterAllocateTensors(interpreter) != kTfLiteOk) {
     ThrowRuntimeException(env, "Failed to allocate tensors");
     TfLiteInterpreterDelete(interpreter);
-    if (uses_delegate(tflite_source)) {
+    if (uses_external_delegate(tflite_source)) {
       TfLiteExternalDelegateDelete(detector->delegate);
     }
     env->ReleaseStringUTFChars(modelPath, model_name);
@@ -300,7 +300,7 @@ Java_org_photonvision_tflite_TFLiteJNI_destroy
 
   // Now safely use the pointers
   if (detector->interpreter) TfLiteInterpreterDelete(detector->interpreter);
-  if (uses_delegate(detector->source)) {
+  if (uses_external_delegate(detector->source)) {
     if (detector->delegate) TfLiteExternalDelegateDelete(detector->delegate);
   }
   if (detector->model) TfLiteModelDelete(detector->model);
