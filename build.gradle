@@ -122,7 +122,7 @@ spotless {
     format 'misc', {
         target fileTree('.') {
             include '**/*.md', '**/.gitignore'
-            exclude '**/build/**', '**/build-*/**'
+            exclude '**/build/**', '**/build-*/**', '**/cmake_build/**'
         }
         trimTrailingWhitespace()
         leadingTabsToSpaces(2)
