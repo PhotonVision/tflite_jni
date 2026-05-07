@@ -56,7 +56,7 @@ set(OPENCV_VERSION "2027-4.13.0-3")
 # also valid: windowsx86-64
 
 # type can be "", "debug", "static", or "staticdebug"
-set(OPENCV_TYPE "")
+set(OPENCV_TYPE "debug")
 
 include(FetchContent)
 FetchContent_Declare(
