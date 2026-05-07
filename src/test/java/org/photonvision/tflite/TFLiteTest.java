@@ -36,7 +36,8 @@ import org.photonvision.tflite.TFLiteJNI.TFLiteResult;
 import org.photonvision.tflite.TFLiteJNI.TFLiteSource;
 
 public class TFLiteTest {
-    public void testModel(String modelPath, String imagePath, int modelVersion) {
+    public void testModel(
+            String modelPath, String imagePath, int modelVersion, TFLiteResult[] expectedResults) {
         try {
             CombinedRuntimeLoader.loadLibraries(TFLiteTest.class, Core.NATIVE_LIBRARY_NAME);
 
@@ -74,6 +75,11 @@ public class TFLiteTest {
 
             System.out.println("Detection results: " + Arrays.toString(ret));
 
+            System.out.println("Expected detection results: " + Arrays.toString(expectedResults));
+            var isSame = Arrays.equals(ret, expectedResults);
+            System.out.println("Is same " + isSame);
+            assertTrue(isSame, "Results should be as expected");
+
             System.out.println("Releasing TFLite detector");
             TFLiteJNI.destroy(ptr);
 
@@ -109,8 +115,32 @@ public class TFLiteTest {
 
     @Test
     public void testYoloV8() {
+        TFLiteResult[] expectedResults = {
+            new TFLiteResult(206, 235, 274, 509, 0.8782271f, 0, 0.0f),
+            new TFLiteResult(95, 137, 545, 447, 0.84069604f, 5, 0.0f),
+            new TFLiteResult(118, 232, 229, 532, 0.84069604f, 0, 0.0f),
+            new TFLiteResult(483, 222, 562, 522, 0.84069604f, 0, 0.0f),
+        };
         testModel(
-                "src/test/resources/models/yolov8nCoco.tflite", "src/test/resources/images/bus.jpg", 1);
+                "src/test/resources/models/yolov8nCoco.tflite",
+                "src/test/resources/images/bus.jpg",
+                1,
+                expectedResults);
+    }
+
+    @Test
+    public void testYoloV11() {
+        TFLiteResult[] expectedResults = {
+            new TFLiteResult(91, 145, 552, 435, 0.9453125f, 5, 0.0f),
+            new TFLiteResult(104, 246, 214, 536, 0.8984375f, 0, 0.0f),
+            new TFLiteResult(221, 233, 281, 504, 0.8515625f, 0, 0.0f),
+            new TFLiteResult(482, 224, 561, 514, 0.8203125f, 0, 0.0f),
+        };
+        testModel(
+                "src/test/resources/models/yolov11nCoco.tflite",
+                "src/test/resources/images/bus.jpg",
+                2,
+                expectedResults);
     }
 
     // Helper method to determine if the memory leak test should be enabled
