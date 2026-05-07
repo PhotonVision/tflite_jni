@@ -1,27 +1,43 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(rubik_jni)
+project(tflite_jni LANGUAGES CXX)
+
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_INSTALL_RPATH $ORIGIN)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-if(ENABLE_ASAN)
-    message(STATUS "BUILD WITH ADDRESS SANITIZER")
-    set(CMAKE_C_FLAGS_DEBUG
-        "${CMAKE_C_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined"
-    )
-    set(CMAKE_CXX_FLAGS_DEBUG
-        "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined"
-    )
-    set(CMAKE_LINKER_FLAGS_DEBUG
-        "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined"
-    )
-endif()
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
+set(CMAKE_BUILD_RPATH "$ORIGIN;$ORIGIN/../lib")
+set(CMAKE_INSTALL_RPATH "$ORIGIN")
 
 set(BUILD_SHARED_LIBS ON)
 
-find_package(JNI REQUIRED COMPONENTS JVM)
+if(DEFINED ENV{JAVA_HOME})
+    if(EXISTS "$ENV{JAVA_HOME}/include/jni.h")
+        list(APPEND JNI_SEARCH_PATHS "$ENV{JAVA_HOME}/include")
+    elseif(EXISTS "$ENV{JAVA_HOME}/lib/openjdk/include/jni.h")
+        list(APPEND JNI_SEARCH_PATHS "$ENV{JAVA_HOME}/lib/openjdk/include")
+    endif()
+endif()
+
+find_path(JNI_INCLUDE_DIR NAMES jni.h PATHS ${JNI_SEARCH_PATHS})
+
+find_path(
+    JNI_MD_INCLUDE_DIR
+    NAMES jni_md.h
+    PATHS ${JNI_SEARCH_PATHS}
+    PATH_SUFFIXES linux darwin win32
+)
+
+if(NOT JNI_INCLUDE_DIR OR NOT JNI_MD_INCLUDE_DIR)
+    message(
+        FATAL_ERROR
+        "Could not locate JNI headers. Set JAVA_HOME to a JDK installation."
+    )
+endif()
+
+find_package(Threads REQUIRED)
 
 set(OPENCV_VERSION "2027-4.13.0-3")
 # also valid: windowsx86-64
@@ -29,7 +45,6 @@ set(OPENCV_VERSION "2027-4.13.0-3")
 # type can be "", "debug", "static", or "staticdebug"
 set(OPENCV_TYPE "")
 
-# Download opencv, and save the path
 include(FetchContent)
 FetchContent_Declare(
     opencv_lib
@@ -39,7 +54,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(opencv_lib)
 
-# download OpenCV headers
 FetchContent_Declare(
     opencv_header
     URL
@@ -48,78 +62,76 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(opencv_header)
 
-# This probably doesn't work great with shared libraries, but I don't care about those right now
 file(
     GLOB_RECURSE OPENCV_LIB_PATH
     "${opencv_lib_SOURCE_DIR}/**/*.lib"
     "${opencv_lib_SOURCE_DIR}/**/*.so*"
 )
+
 set(OPENCV_INCLUDE_PATH ${opencv_header_SOURCE_DIR})
 message("Depending on opencv ${OPENCV_LIB_PATH}")
 
-# Download TensorFlow Lite headers
-include(FetchContent)
+include(GNUInstallDirs)
+
+set(TFLITE_VERSION "v2.19.0")
+
+# TensorFlow Lite's CMake build expects these options to be set before the
+# subdirectory is added.
+set(TFLITE_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+set(TFLITE_ENABLE_LABEL_IMAGE OFF CACHE BOOL "" FORCE)
+set(TFLITE_ENABLE_GPU OFF CACHE BOOL "" FORCE)
+set(TFLITE_ENABLE_NNAPI OFF CACHE BOOL "" FORCE)
+set(TFLITE_ENABLE_MMAP ON CACHE BOOL "" FORCE)
+set(TFLITE_ENABLE_XNNPACK OFF CACHE BOOL "" FORCE)
+
 FetchContent_Declare(
-    tflite_header
-    URL https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.19.0.zip
+    tensorflowlite_src
+    URL
+        https://github.com/tensorflow/tensorflow/archive/refs/tags/${TFLITE_VERSION}.zip
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
-FetchContent_MakeAvailable(tflite_header)
+FetchContent_MakeAvailable(tensorflowlite_src)
 
-# Set TensorFlow Lite headers
-set(TFLITE_INCLUDE_DIR
-    "${tflite_header_SOURCE_DIR}"
-    CACHE PATH
-    "Path to TensorFlow Lite include directory"
+add_subdirectory(
+    "${tensorflowlite_src_SOURCE_DIR}/tensorflow/lite/c"
+    "${CMAKE_CURRENT_BINARY_DIR}/tensorflow-lite-c"
+    EXCLUDE_FROM_ALL
 )
 
-# Set TensorFlow Lite library - use absolute path and verify it exists
-set(LIB_PATH
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/main/native/lib/"
-    CACHE FILEPATH
-    "Path to TensorFlow Lite library"
-)
-
-# Check if the library path exists
-if(NOT EXISTS ${LIB_PATH})
-    message(FATAL_ERROR "Library directory not found at: ${LIB_PATH}")
-else()
-    message(STATUS "Found library directory: ${LIB_PATH}")
+# TensorFlow Lite's CMakeLists currently doesn't link Abseil's newer logging
+# implementation into `tensorflow-lite` when building shared libraries, which
+# can leave `absl::log_internal::*` symbols undefined at runtime.
+#
+# When the C API library depends on `tensorflow-lite`, the dynamic loader may
+# fail with e.g.:
+#   undefined symbol: absl::lts_20230802::log_internal::kCharNull
+#
+# Ensure the required Abseil logging objects are part of the link.
+if(BUILD_SHARED_LIBS AND TARGET tensorflow-lite)
+    target_link_libraries(tensorflow-lite PUBLIC absl::log_internal_message)
 endif()
 
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads REQUIRED)
-
-file(GLOB NATIVE_SOURCES src/main/native/cpp/*.cpp)
+file(GLOB NATIVE_SOURCES CONFIGURE_DEPENDS src/main/native/cpp/*.cpp)
 
 add_library(${PROJECT_NAME} ${NATIVE_SOURCES})
-
-target_link_libraries(
-    ${PROJECT_NAME}
-    PUBLIC
-        Threads::Threads
-        ${OPENCV_LIB_PATH}
-        ${LIB_PATH}/libtensorflowlite_c.so
-        ${LIB_PATH}/libtensorflowlite.so
-        ${LIB_PATH}/libexternal_delegate.so
-)
 
 target_include_directories(
     ${PROJECT_NAME}
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/main/native/include
-        ${JNI_INCLUDE_DIRS}
         ${OPENCV_INCLUDE_PATH}
-        ${TFLITE_INCLUDE_DIR}
+        ${JNI_INCLUDE_DIR}
+        ${JNI_MD_INCLUDE_DIR}
+        ${tensorflowlite_src_SOURCE_DIR}
 )
 
-include(GNUInstallDirs)
-install(TARGETS ${PROJECT_NAME})
-install(
-    FILES
-        ${LIB_PATH}/libtensorflowlite_c.so
-        ${LIB_PATH}/libtensorflowlite.so
-        ${LIB_PATH}/libexternal_delegate.so
-    TYPE LIB
+target_link_libraries(
+    ${PROJECT_NAME}
+    PRIVATE
+        Threads::Threads
+        ${OPENCV_LIB_PATH}
+        tensorflowlite_c
+        ${CMAKE_DL_LIBS}
 )
+
+install(TARGETS ${PROJECT_NAME})

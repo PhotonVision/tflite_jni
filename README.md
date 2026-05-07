@@ -3,7 +3,7 @@
 ```
 sudo apt-get update
 sudo apt-get install -y build-essential cmake openjdk-25-jdk default-jdk
-git clone https://github.com/PhotonVision/rubik_jni
+git clone https://github.com/PhotonVision/tflite_jni
 cmake -B cmake_build -S . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=cmake_build -DOPENCV_ARCH=linuxarm64 ; cmake --build cmake_build --target install -- -j 4
 # Sudo is needed because of some weird permission issues with gradle and native libraries
 sudo ./gradlew build -x spotlessCheck

@@ -37,6 +37,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params:6.0.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.0.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testRuntimeOnly("com.fasterxml.jackson.core:jackson-databind:2.17.2")
 
     implementation wpilibTools.deps.wpilibJava("wpiutil")
     testImplementation wpilibTools.deps.wpilibJava("cscore")
@@ -62,6 +63,8 @@ test {
     testLogging {
         outputs.upToDateWhen {false}
         showStandardStreams = true
+        events "failed"
+        exceptionFormat = "full"
     }
 
     if (project.hasProperty('memLeakTestIterations')) {
@@ -111,7 +114,7 @@ spotless {
     groovyGradle {
         target fileTree('.') {
             include '**/*.gradle'
-            exclude '**/build/**', '**/build-*/**'
+            exclude '**/build/**', '**/build-*/**', '**/cmake_build/**'
         }
         greclipse()
         leadingTabsToSpaces(4)
@@ -121,7 +124,7 @@ spotless {
     format 'misc', {
         target fileTree('.') {
             include '**/*.md', '**/.gitignore'
-            exclude '**/build/**', '**/build-*/**'
+            exclude '**/build/**', '**/build-*/**', '**/cmake_build/**'
         }
         trimTrailingWhitespace()
         leadingTabsToSpaces(2)
