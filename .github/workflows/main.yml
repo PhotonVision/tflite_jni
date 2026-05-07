@@ -1,4 +1,4 @@
-name: Build rubik_java
+name: Build tflite_java
 
 on:
   push:
@@ -93,9 +93,9 @@ jobs:
     - uses: actions/upload-artifact@v4
       name: Upload jar
       with:
-        name: librubik-jar-pi-${{ matrix.build-type }}-${{ matrix.platform }}
+        name: libtflite-jar-pi-${{ matrix.build-type }}-${{ matrix.platform }}
         path: ${{ github.workspace }}/build/libs/*.jar
     - uses: actions/upload-artifact@v4
       with:
-        name: librubik-${{ matrix.build-type }}-${{ matrix.platform }}
+        name: libtflite-${{ matrix.build-type }}-${{ matrix.platform }}
         path: cmake_build/*.so
