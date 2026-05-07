@@ -146,7 +146,7 @@ Java_org_photonvision_tflite_TFLiteJNI_create
   int source_int = static_cast<int>(source);
 
   // This should be updated whenever a new model version is added
-  if (TFLiteSource::NONE < source_int < TFLiteSource::NUM_SOURCES) {
+  if (source_int < TFLiteSource::NONE || source_int > TFLiteSource::NUM_SOURCES) {
     ThrowRuntimeException(env, "Invalid TFLite source specified");
     env->ReleaseStringUTFChars(modelPath, model_name);
     return 0;
