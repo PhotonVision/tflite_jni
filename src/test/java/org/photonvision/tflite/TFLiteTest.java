@@ -77,13 +77,12 @@ public class TFLiteTest {
 
             System.out.println("Expected detection results: " + Arrays.toString(expectedResults));
 
-            // We can't guarantee expected results will be in the same order on every platform so just check the length is the same and check each result is there somewhere
+            // We can't guarantee expected results will be in the same order on every platform so just
+            // check the length is the same and check each result is there somewhere
             assertTrue(ret.length == expectedResults.length, "Results should be the same length");
-            for (var res : expectedResults) {
-            }
-            var isSame = Arrays.equals(ret, expectedResults);
-            System.out.println("Is same " + isSame);
-            assertTrue(isSame, "Results should be as expected");
+            assertTrue(
+                    Arrays.asList(ret).containsAll(Arrays.asList(expectedResults)),
+                    "Results should contain all of the expected results");
 
             System.out.println("Releasing TFLite detector");
             TFLiteJNI.destroy(ptr);
