@@ -37,9 +37,11 @@ import org.photonvision.tflite.TFLiteJNI.TFLiteSource;
 
 public class TFLiteTest {
     public void testModel(
-            String modelPath, String imagePath, int modelVersion, TFLiteResult[] expectedResults) {
+            String modelName, String imagePath, int modelVersion, TFLiteResult[] expectedResults) {
         try {
             CombinedRuntimeLoader.loadLibraries(TFLiteTest.class, Core.NATIVE_LIBRARY_NAME);
+
+            String modelPath = "src/test/resources/models/" + modelName + ".tflite";
 
             System.out.println(Core.getBuildInformation());
             System.out.println(Core.OpenCLApiCallError);
@@ -107,7 +109,7 @@ public class TFLiteTest {
             }
 
             String newImagePath =
-                    imagePath.substring(0, imagePath.lastIndexOf('.')) + "_with_results.jpg";
+                    imagePath.substring(0, imagePath.lastIndexOf('.')) + modelName + "_with_results.jpg";
 
             // Save the image with results
             Imgcodecs.imwrite(newImagePath, img);
@@ -125,11 +127,7 @@ public class TFLiteTest {
             new TFLiteResult(118, 232, 229, 532, 0.84069604f, 0, 0.0f),
             new TFLiteResult(483, 222, 562, 522, 0.84069604f, 0, 0.0f),
         };
-        testModel(
-                "src/test/resources/models/yolov8nCoco.tflite",
-                "src/test/resources/images/bus.jpg",
-                1,
-                expectedResults);
+        testModel("yolov8nCoco", "src/test/resources/images/bus.jpg", 1, expectedResults);
     }
 
     @Test
@@ -140,11 +138,7 @@ public class TFLiteTest {
             new TFLiteResult(221, 233, 281, 504, 0.8515625f, 0, 0.0f),
             new TFLiteResult(482, 224, 561, 514, 0.8203125f, 0, 0.0f),
         };
-        testModel(
-                "src/test/resources/models/yolov11nCoco.tflite",
-                "src/test/resources/images/bus.jpg",
-                2,
-                expectedResults);
+        testModel("yolov11nCoco", "src/test/resources/images/bus.jpg", 2, expectedResults);
     }
 
     // Helper method to determine if the memory leak test should be enabled
