@@ -153,7 +153,11 @@ public class TFLiteTest {
         System.out.println(Core.OpenCLApiCallError);
 
         System.out.println("Loading tflite_jni");
-        System.load("/home/photon/tflite_jni/cmake_build/libtflite_jni.so");
+        Path localSo = Path.of("cmake_build", "lib", "libtflite_jni.so").toAbsolutePath();
+        Assumptions.assumeTrue(
+                Files.exists(localSo),
+                "Native library not found at " + localSo + " (run the native build first)");
+        System.load(localSo.toString());
 
         int numRuns = Integer.parseInt(System.getProperty("memLeakTestIterations"));
 
@@ -166,7 +170,7 @@ public class TFLiteTest {
             // Create a TFLite detector instance
             long ptr =
                     TFLiteJNI.create(
-                            "src/test/resources/models/yolov8nCoco.tflite", 0, TFLiteSource.CPU.value());
+                            "src/test/resources/models/yolov8nCoco.tflite", 1, TFLiteSource.CPU.value());
 
             if (ptr == 0) {
                 throw new RuntimeException("Failed to create TFLite detector");
@@ -198,7 +202,11 @@ public class TFLiteTest {
         System.out.println(Core.OpenCLApiCallError);
 
         System.out.println("Loading tflite_jni");
-        System.load("/home/photon/tflite_jni/cmake_build/libtflite_jni.so");
+        Path localSo = Path.of("cmake_build", "lib", "libtflite_jni.so").toAbsolutePath();
+        Assumptions.assumeTrue(
+                Files.exists(localSo),
+                "Native library not found at " + localSo + " (run the native build first)");
+        System.load(localSo.toString());
 
         System.out.println("Loading bus");
         Mat img = Imgcodecs.imread("src/test/resources/images/bus.jpg");
