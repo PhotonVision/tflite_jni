@@ -36,9 +36,12 @@ import org.photonvision.tflite.TFLiteJNI.TFLiteResult;
 import org.photonvision.tflite.TFLiteJNI.TFLiteSource;
 
 public class TFLiteTest {
-    public void testModel(String modelPath, String imagePath, int modelVersion) {
+    public void testModel(
+            String modelName, String imagePath, int modelVersion, TFLiteResult[] expectedResults) {
         try {
             CombinedRuntimeLoader.loadLibraries(TFLiteTest.class, Core.NATIVE_LIBRARY_NAME);
+
+            String modelPath = "src/test/resources/models/" + modelName + ".tflite";
 
             System.out.println(Core.getBuildInformation());
             System.out.println(Core.OpenCLApiCallError);
@@ -74,6 +77,15 @@ public class TFLiteTest {
 
             System.out.println("Detection results: " + Arrays.toString(ret));
 
+            System.out.println("Expected detection results: " + Arrays.toString(expectedResults));
+
+            // We can't guarantee expected results will be in the same order on every platform so just
+            // check the length is the same and check each result is there somewhere
+            assertTrue(ret.length == expectedResults.length, "Results should be the same length");
+            assertTrue(
+                    Arrays.asList(ret).containsAll(Arrays.asList(expectedResults)),
+                    "Results should contain all of the expected results");
+
             System.out.println("Releasing TFLite detector");
             TFLiteJNI.destroy(ptr);
 
@@ -97,7 +109,7 @@ public class TFLiteTest {
             }
 
             String newImagePath =
-                    imagePath.substring(0, imagePath.lastIndexOf('.')) + "_with_results.jpg";
+                    imagePath.substring(0, imagePath.lastIndexOf('.')) + modelName + "_with_results.jpg";
 
             // Save the image with results
             Imgcodecs.imwrite(newImagePath, img);
@@ -109,8 +121,24 @@ public class TFLiteTest {
 
     @Test
     public void testYoloV8() {
-        testModel(
-                "src/test/resources/models/yolov8nCoco.tflite", "src/test/resources/images/bus.jpg", 1);
+        TFLiteResult[] expectedResults = {
+            new TFLiteResult(206, 235, 274, 509, 0.8782271f, 0, 0.0f),
+            new TFLiteResult(95, 137, 545, 447, 0.84069604f, 5, 0.0f),
+            new TFLiteResult(118, 232, 229, 532, 0.84069604f, 0, 0.0f),
+            new TFLiteResult(483, 222, 562, 522, 0.84069604f, 0, 0.0f),
+        };
+        testModel("yolov8nCoco", "src/test/resources/images/bus.jpg", 1, expectedResults);
+    }
+
+    @Test
+    public void testYoloV11() {
+        TFLiteResult[] expectedResults = {
+            new TFLiteResult(91, 145, 552, 435, 0.9453125f, 5, 0.0f),
+            new TFLiteResult(104, 246, 214, 536, 0.8984375f, 0, 0.0f),
+            new TFLiteResult(221, 233, 281, 504, 0.8515625f, 0, 0.0f),
+            new TFLiteResult(482, 224, 561, 514, 0.8203125f, 0, 0.0f),
+        };
+        testModel("yolov11nCoco", "src/test/resources/images/bus.jpg", 2, expectedResults);
     }
 
     // Helper method to determine if the memory leak test should be enabled
