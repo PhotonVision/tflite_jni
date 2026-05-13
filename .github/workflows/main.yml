@@ -86,7 +86,7 @@ jobs:
 
     - name: Publish
       run: |
-        ./gradlew build ${{ (startsWith(github.event_name, 'push') && 'publish') || '' }} -PArchOverride=${{ matrix.platform }} -PPublishType=${{ matrix.build-type }}-${{ matrix.platform }} -x check
+        ./gradlew build ${{ (startsWith(github.event_name, 'push') && 'publish') || '' }} -PArchOverride=${{ matrix.platform }} -PPublishType=${{ matrix.build-type != 'Release' && matrix.build-type || '' }} -x check
       env:
         ARTIFACTORY_API_KEY: ${{ secrets.ARTIFACTORY_API_KEY }}
 
