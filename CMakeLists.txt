@@ -73,9 +73,9 @@ message("Depending on opencv ${OPENCV_LIB_PATH}")
 
 include(GNUInstallDirs)
 
-set(TFLITE_VERSION "v2.19.0")
+set(LITERT_VERSION "v2.1.5")
 
-# TensorFlow Lite's CMake build expects these options to be set before the
+# LiteRT's CMake build expects these options to be set before the
 # subdirectory is added.
 set(TFLITE_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 set(TFLITE_ENABLE_LABEL_IMAGE OFF CACHE BOOL "" FORCE)
@@ -85,16 +85,16 @@ set(TFLITE_ENABLE_MMAP ON CACHE BOOL "" FORCE)
 set(TFLITE_ENABLE_XNNPACK OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
-    tensorflowlite_src
+    litert_src
     URL
-        https://github.com/tensorflow/tensorflow/archive/refs/tags/${TFLITE_VERSION}.zip
+        https://github.com/google-ai-edge/LiteRT/archive/refs/tags/${LITERT_VERSION}.zip
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
-FetchContent_MakeAvailable(tensorflowlite_src)
+FetchContent_MakeAvailable(litert_src)
 
 add_subdirectory(
-    "${tensorflowlite_src_SOURCE_DIR}/tensorflow/lite/c"
-    "${CMAKE_CURRENT_BINARY_DIR}/tensorflow-lite-c"
+    "${litert_src_SOURCE_DIR}/tflite"
+    "${CMAKE_CURRENT_BINARY_DIR}/tflite-build"
     EXCLUDE_FROM_ALL
 )
 
@@ -122,16 +122,11 @@ target_include_directories(
         ${OPENCV_INCLUDE_PATH}
         ${JNI_INCLUDE_DIR}
         ${JNI_MD_INCLUDE_DIR}
-        ${tensorflowlite_src_SOURCE_DIR}
 )
 
 target_link_libraries(
     ${PROJECT_NAME}
-    PRIVATE
-        Threads::Threads
-        ${OPENCV_LIB_PATH}
-        tensorflowlite_c
-        ${CMAKE_DL_LIBS}
+    PRIVATE Threads::Threads ${OPENCV_LIB_PATH} tensorflow-lite ${CMAKE_DL_LIBS}
 )
 
 install(TARGETS ${PROJECT_NAME})
