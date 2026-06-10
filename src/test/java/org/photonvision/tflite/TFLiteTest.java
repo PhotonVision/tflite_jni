@@ -244,7 +244,7 @@ public class TFLiteTest {
         TFLiteResult[] midThreshResults =
                 runDetection("yolov8nCoco", "src/test/resources/images/bus.jpg", 1, 0.5, 0.45);
         assertTrue(
-                lowThreshResults.length > 0, "Mid confidence threshold (0.5) should return some results");
+                midThreshResults.length > 0, "Mid confidence threshold (0.5) should return some results");
 
         TFLiteResult[] lowThreshResults =
                 runDetection("yolov8nCoco", "src/test/resources/images/bus.jpg", 1, 0.1, 0.45);
@@ -263,7 +263,6 @@ public class TFLiteTest {
 
         TFLiteResult[] midThreshResults =
                 runDetection("yolov11nCoco", "src/test/resources/images/bus.jpg", 2, 0.5, 0.45);
-
         assertTrue(
                 midThreshResults.length > 0, "Mid confidence threshold (0.5) should return detections");
 
