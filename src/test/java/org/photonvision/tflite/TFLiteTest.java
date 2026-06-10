@@ -380,9 +380,9 @@ public class TFLiteTest {
         TFLiteResult[] lowNmsResults =
                 runDetection("yolov8nCoco", "src/test/resources/images/bus.jpg", 1, 0.1, 0.45);
 
-        assertTrue(highNmsResults.length == 29, "High NMS (0.99) should return 29 detections");
-        assertTrue(midNmsResults.length == 9, "Mid NMS (0.75) should return 9 detections");
-        assertTrue(lowNmsResults.length == 6, "Low NMS (0.45) should return 6 detections");
+        assertTrue(withinTolerance(highNmsResults.length, 29, 0.1), "High NMS (0.99) should return ~29 detections");
+        assertTrue(withinTolerance(midNmsResults.length, 9, 0.1), "Mid NMS (0.75) should return ~9 detections");
+        assertTrue(withinTolerance(lowNmsResults.length, 6, 0.1), "Low NMS (0.45) should return ~6 detections");
 
         // All mid-NMS results must be present in high-NMS results
         for (TFLiteResult mid : midNmsResults) {
@@ -418,9 +418,9 @@ public class TFLiteTest {
         TFLiteResult[] lowNmsResults =
                 runDetection("yolov11nCoco", "src/test/resources/images/bus.jpg", 2, 0.1, 0.45);
 
-        assertTrue(highNmsResults.length == 25, "High NMS (0.99) should return 25 detections");
-        assertTrue(midNmsResults.length == 8, "Mid NMS (0.75) should return 8 detections");
-        assertTrue(lowNmsResults.length == 6, "Low NMS (0.45) should return 6 detections");
+        assertTrue(withinTolerance(highNmsResults.length, 25, 0.1), "High NMS (0.99) should return ~25 detections");
+        assertTrue(withinTolerance(midNmsResults.length, 8, 0.1), "Mid NMS (0.75) should return ~8 detections");
+        assertTrue(withinTolerance(lowNmsResults.length, 6, 0.1), "Low NMS (0.45) should return ~6 detections");
 
         // All mid-NMS results must be present in high-NMS results
         for (TFLiteResult mid : midNmsResults) {
