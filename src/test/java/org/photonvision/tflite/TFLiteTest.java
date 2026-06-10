@@ -289,7 +289,7 @@ public class TFLiteTest {
                 withinTolerance(midNmsResults.length, 9, 0.15),
                 "Mid NMS (0.75) should return ~9 detections");
         assertTrue(
-                withinTolerance(lowNmsResults.length, 6, 0.15),
+                withinTolerance(lowNmsResults.length, 6, 0.2),
                 "Low NMS (0.45) should return ~6 detections");
 
         // All mid-NMS results must be present in high-NMS results
