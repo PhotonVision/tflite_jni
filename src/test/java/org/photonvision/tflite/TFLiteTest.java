@@ -36,44 +36,46 @@ import org.photonvision.tflite.TFLiteJNI.TFLiteResult;
 import org.photonvision.tflite.TFLiteJNI.TFLiteSource;
 
 public class TFLiteTest {
+    private TFLiteResult[] runDetection(
+            String modelName, String imagePath, int modelVersion, double boxThresh, double nmsThreshold)
+            throws IOException {
+        CombinedRuntimeLoader.loadLibraries(TFLiteTest.class, Core.NATIVE_LIBRARY_NAME);
+
+        String modelPath = "src/test/resources/models/" + modelName + ".tflite";
+
+        System.out.println(Core.getBuildInformation());
+        System.out.println(Core.OpenCLApiCallError);
+
+        System.out.println("Loading tflite_jni");
+        Path localSo = Path.of("cmake_build", "lib", "libtflite_jni.so").toAbsolutePath();
+        Assumptions.assumeTrue(
+                Files.exists(localSo),
+                "Native library not found at " + localSo + " (run the native build first)");
+        System.load(localSo.toString());
+
+        System.out.println("Loading image: " + imagePath);
+        Mat img = Imgcodecs.imread(imagePath);
+        System.out.println("Image loaded: " + img.size() + " " + img.type());
+
+        System.out.println("Creating TFLite detector");
+        long ptr = TFLiteJNI.create(modelPath, modelVersion, TFLiteSource.CPU.value());
+        System.out.println("TFLite detector created: " + ptr);
+
+        assertTrue(TFLiteJNI.isQuantized(ptr), "TFLite detector should be quantized");
+
+        TFLiteResult[] ret = TFLiteJNI.detect(ptr, img.getNativeObjAddr(), boxThresh, nmsThreshold);
+
+        System.out.println("Releasing TFLite detector");
+        TFLiteJNI.destroy(ptr);
+        img.release();
+
+        return ret;
+    }
+
     public void testModel(
             String modelName, String imagePath, int modelVersion, TFLiteResult[] expectedResults) {
         try {
-            CombinedRuntimeLoader.loadLibraries(TFLiteTest.class, Core.NATIVE_LIBRARY_NAME);
-
-            String modelPath = "src/test/resources/models/" + modelName + ".tflite";
-
-            System.out.println(Core.getBuildInformation());
-            System.out.println(Core.OpenCLApiCallError);
-
-            System.out.println("Loading tflite_jni");
-            Path localSo = Path.of("cmake_build", "lib", "libtflite_jni.so").toAbsolutePath();
-            Assumptions.assumeTrue(
-                    Files.exists(localSo),
-                    "Native library not found at " + localSo + " (run the native build first)");
-            System.load(localSo.toString());
-
-            System.out.println("Loading image: " + imagePath);
-            Mat img = Imgcodecs.imread(imagePath);
-
-            if (img.empty()) {
-                throw new RuntimeException("Failed to load image");
-            }
-
-            System.out.println("Image loaded: " + img.size() + " " + img.type());
-
-            System.out.println("Creating TFLite detector");
-            long ptr = TFLiteJNI.create(modelPath, modelVersion, TFLiteSource.CPU.value());
-
-            if (ptr == 0) {
-                throw new RuntimeException("Failed to create TFLite detector");
-            }
-
-            System.out.println("TFLite detector created: " + ptr);
-
-            assertTrue(TFLiteJNI.isQuantized(ptr), "TFLite detector should be quantized");
-
-            TFLiteResult[] ret = TFLiteJNI.detect(ptr, img.getNativeObjAddr(), 0.5f, 0.45f);
+            TFLiteResult[] ret = runDetection(modelName, imagePath, modelVersion, 0.5f, 0.45f);
 
             System.out.println("Detection results: " + Arrays.toString(ret));
 
@@ -98,9 +100,7 @@ public class TFLiteTest {
                 assertTrue(found, "Expected result not found: " + expected);
             }
 
-            System.out.println("Releasing TFLite detector");
-            TFLiteJNI.destroy(ptr);
-
+            Mat img = Imgcodecs.imread(imagePath);
             for (TFLiteResult result : ret) {
                 System.out.println("Result: " + result);
 
@@ -126,6 +126,7 @@ public class TFLiteTest {
             // Save the image with results
             Imgcodecs.imwrite(newImagePath, img);
             System.out.println("Results written to image and saved as " + newImagePath);
+            img.release();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -187,6 +188,146 @@ public class TFLiteTest {
             new TFLiteResult(482, 224, 561, 514, 0.8203125f, 0, 0.0f),
         };
         testModel("yolov11nCoco", "src/test/resources/images/bus.jpg", 2, expectedResults);
+    }
+
+    @Test
+    public void testYoloV8ConfidenceThresholding() throws IOException {
+        TFLiteResult[] highThreshResults =
+                runDetection("yolov8nCoco", "src/test/resources/images/bus.jpg", 1, 0.99, 0.45);
+        assertTrue(
+                highThreshResults.length == 0,
+                "High confidence threshold (0.99) should filter out all detections");
+
+        TFLiteResult[] lowThreshResults =
+                runDetection("yolov8nCoco", "src/test/resources/images/bus.jpg", 1, 0.1, 0.45);
+        assertTrue(
+                lowThreshResults.length >= 4,
+                "Low confidence threshold (0.1) should return at least as many detections as default (0.5)");
+
+        TFLiteResult[] midThreshResults =
+                runDetection("yolov8nCoco", "src/test/resources/images/bus.jpg", 1, 0.5, 0.45);
+
+        // All middle-threshold results must be present in the low-threshold set
+        for (TFLiteResult mid : midThreshResults) {
+            boolean found = false;
+            for (TFLiteResult low : lowThreshResults) {
+                if (resultMatches(mid, low)) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue(
+                    found,
+                    "Middle threshold result should be present in low threshold results: " + mid);
+        }
+
+        // Exactly 2 low-threshold results should be missing from the middle-threshold set
+        int missingCount = 0;
+        TFLiteResult[] missing = new TFLiteResult[2];
+        for (TFLiteResult low : lowThreshResults) {
+            boolean found = false;
+            for (TFLiteResult mid : midThreshResults) {
+                if (resultMatches(low, mid)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                assertTrue(
+                        missingCount < 2,
+                        "More than 2 results were filtered out by middle threshold");
+                missing[missingCount++] = low;
+            }
+        }
+        assertTrue(
+                missingCount == 2,
+                "Exactly 2 low-threshold results should be filtered out by middle threshold, but " + missingCount + " were missing");
+
+        // The removed results should be the two with the lowest confidence scores
+        TFLiteResult lowest1 = null;
+        TFLiteResult lowest2 = null;
+        for (TFLiteResult r : lowThreshResults) {
+            if (lowest1 == null || r.conf < lowest1.conf) {
+                lowest2 = lowest1;
+                lowest1 = r;
+            } else if (lowest2 == null || r.conf < lowest2.conf) {
+                lowest2 = r;
+            }
+        }
+        assertTrue(
+                (resultMatches(missing[0], lowest1) && resultMatches(missing[1], lowest2))
+                        || (resultMatches(missing[0], lowest2) && resultMatches(missing[1], lowest1)),
+                "The two filtered-out results should be the ones with the lowest confidence scores");
+    }
+
+    @Test
+    public void testYoloV11ConfidenceThresholding() throws IOException {
+        TFLiteResult[] highThreshResults =
+                runDetection("yolov11nCoco", "src/test/resources/images/bus.jpg", 2, 0.99, 0.45);
+        assertTrue(
+                highThreshResults.length == 0,
+                "High confidence threshold (0.99) should filter out all detections");
+
+        TFLiteResult[] lowThreshResults =
+                runDetection("yolov11nCoco", "src/test/resources/images/bus.jpg", 2, 0.1, 0.45);
+        assertTrue(
+                lowThreshResults.length >= 4,
+                "Low confidence threshold (0.1) should return at least as many detections as default (0.5)");
+
+        TFLiteResult[] midThreshResults =
+                runDetection("yolov11nCoco", "src/test/resources/images/bus.jpg", 2, 0.5, 0.45);
+
+        // All middle-threshold results must be present in the low-threshold set
+        for (TFLiteResult mid : midThreshResults) {
+            boolean found = false;
+            for (TFLiteResult low : lowThreshResults) {
+                if (resultMatches(mid, low)) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue(
+                    found,
+                    "Middle threshold result should be present in low threshold results: " + mid);
+        }
+
+        // Exactly 2 low-threshold results should be missing from the middle-threshold set
+        int missingCount = 0;
+        TFLiteResult[] missing = new TFLiteResult[2];
+        for (TFLiteResult low : lowThreshResults) {
+            boolean found = false;
+            for (TFLiteResult mid : midThreshResults) {
+                if (resultMatches(low, mid)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                assertTrue(
+                        missingCount < 2,
+                        "More than 2 results were filtered out by middle threshold");
+                missing[missingCount++] = low;
+            }
+        }
+        assertTrue(
+                missingCount == 2,
+                "Exactly 2 low-threshold results should be filtered out by middle threshold, but " + missingCount + " were missing");
+
+        // The removed results should be the two with the lowest confidence scores
+        TFLiteResult lowest1 = null;
+        TFLiteResult lowest2 = null;
+        for (TFLiteResult r : lowThreshResults) {
+            if (lowest1 == null || r.conf < lowest1.conf) {
+                lowest2 = lowest1;
+                lowest1 = r;
+            } else if (lowest2 == null || r.conf < lowest2.conf) {
+                lowest2 = r;
+            }
+        }
+        assertTrue(
+                (resultMatches(missing[0], lowest1) && resultMatches(missing[1], lowest2))
+                        || (resultMatches(missing[0], lowest2) && resultMatches(missing[1], lowest1)),
+                "The two filtered-out results should be the ones with the lowest confidence scores");
     }
 
     // Helper method to determine if the memory leak test should be enabled
