@@ -330,6 +330,90 @@ public class TFLiteTest {
                 "The two filtered-out results should be the ones with the lowest confidence scores");
     }
 
+    @Test
+    public void testYoloV8NmsThresholding() throws IOException {
+        TFLiteResult[] highNmsResults =
+                runDetection("yolov8nCoco", "src/test/resources/images/bus.jpg", 1, 0.1, 0.99);
+        TFLiteResult[] midNmsResults =
+                runDetection("yolov8nCoco", "src/test/resources/images/bus.jpg", 1, 0.1, 0.75);
+        TFLiteResult[] lowNmsResults =
+                runDetection("yolov8nCoco", "src/test/resources/images/bus.jpg", 1, 0.1, 0.45);
+
+        assertTrue(highNmsResults.length == 29, "High NMS (0.99) should return 29 detections");
+        assertTrue(midNmsResults.length == 9, "Mid NMS (0.75) should return 9 detections");
+        assertTrue(lowNmsResults.length == 6, "Low NMS (0.45) should return 6 detections");
+
+        // All mid-NMS results must be present in high-NMS results
+        for (TFLiteResult mid : midNmsResults) {
+            boolean found = false;
+            for (TFLiteResult high : highNmsResults) {
+                if (resultMatches(mid, high)) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue(
+                    found,
+                    "Mid-NMS result should be present in high-NMS results: " + mid);
+        }
+
+        // All low-NMS results must be present in mid-NMS results
+        for (TFLiteResult low : lowNmsResults) {
+            boolean found = false;
+            for (TFLiteResult mid : midNmsResults) {
+                if (resultMatches(low, mid)) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue(
+                    found,
+                    "Low-NMS result should be present in mid-NMS results: " + low);
+        }
+    }
+
+    @Test
+    public void testYoloV11NmsThresholding() throws IOException {
+        TFLiteResult[] highNmsResults =
+                runDetection("yolov11nCoco", "src/test/resources/images/bus.jpg", 2, 0.1, 0.99);
+        TFLiteResult[] midNmsResults =
+                runDetection("yolov11nCoco", "src/test/resources/images/bus.jpg", 2, 0.1, 0.75);
+        TFLiteResult[] lowNmsResults =
+                runDetection("yolov11nCoco", "src/test/resources/images/bus.jpg", 2, 0.1, 0.45);
+
+        assertTrue(highNmsResults.length == 25, "High NMS (0.99) should return 25 detections");
+        assertTrue(midNmsResults.length == 8, "Mid NMS (0.75) should return 8 detections");
+        assertTrue(lowNmsResults.length == 6, "Low NMS (0.45) should return 6 detections");
+
+        // All mid-NMS results must be present in high-NMS results
+        for (TFLiteResult mid : midNmsResults) {
+            boolean found = false;
+            for (TFLiteResult high : highNmsResults) {
+                if (resultMatches(mid, high)) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue(
+                    found,
+                    "Mid-NMS result should be present in high-NMS results: " + mid);
+        }
+
+        // All low-NMS results must be present in mid-NMS results
+        for (TFLiteResult low : lowNmsResults) {
+            boolean found = false;
+            for (TFLiteResult mid : midNmsResults) {
+                if (resultMatches(low, mid)) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue(
+                    found,
+                    "Low-NMS result should be present in mid-NMS results: " + low);
+        }
+    }
+
     // Helper method to determine if the memory leak test should be enabled
     static boolean isIterationTestEnabled(String param) {
         String iterations = System.getProperty(param);
