@@ -21,9 +21,20 @@ import org.opencv.core.Point;
 import org.opencv.core.RotatedRect;
 import org.opencv.core.Size;
 
+/**
+ * JNI bindings for TensorFlow Lite object detection.
+ *
+ * <p>This class provides native methods for loading TensorFlow Lite models, running inference, and
+ * retrieving detection results.
+ */
 public class TFLiteJNI {
+    private TFLiteJNI() {}
+
+    /** The source of computation for TensorFlow Lite inference. */
     public static enum TFLiteSource {
+        /** Use the Rubik Pi TFLite backend. */
         RUBIK(1),
+        /** Use the CPU for inference. */
         CPU(2);
 
         private int value = 0;
@@ -32,6 +43,11 @@ public class TFLiteJNI {
             this.value = value;
         }
 
+        /**
+         * Get the integer value of this source. Used for passing the enum through JNI.
+         *
+         * @return The integer value corresponding to this source.
+         */
         public int value() {
             return value;
         }
@@ -64,8 +80,13 @@ public class TFLiteJNI {
             this.rect = new RotatedRect(center, new Size(width, height), angle);
         }
 
+        /** The bounding box of the detected object. */
         public final RotatedRect rect;
+
+        /** The confidence score of the detection. */
         public final float conf;
+
+        /** The class ID of the detected object. */
         public final int class_id;
 
         @Override
