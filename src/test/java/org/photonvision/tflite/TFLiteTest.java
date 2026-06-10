@@ -168,6 +168,51 @@ public class TFLiteTest {
         return true;
     }
 
+    private boolean isModelQuantized(String modelName, int modelVersion) throws IOException {
+        CombinedRuntimeLoader.loadLibraries(TFLiteTest.class, Core.NATIVE_LIBRARY_NAME);
+
+        String modelPath = "src/test/resources/models/" + modelName + ".tflite";
+
+        Path localSo = Path.of("cmake_build", "lib", "libtflite_jni.so").toAbsolutePath();
+        Assumptions.assumeTrue(
+                Files.exists(localSo),
+                "Native library not found at " + localSo + " (run the native build first)");
+        System.load(localSo.toString());
+
+        long ptr = TFLiteJNI.create(modelPath, modelVersion, TFLiteSource.CPU.value());
+        if (ptr == 0) {
+            throw new RuntimeException("Failed to create TFLite detector");
+        }
+
+        boolean quantized = TFLiteJNI.isQuantized(ptr);
+        TFLiteJNI.destroy(ptr);
+        return quantized;
+    }
+
+    @Test
+    public void testYoloV8IsQuantized() throws IOException {
+        assertTrue(isModelQuantized("yolov8nCoco", 1), "yolov8nCoco should be quantized");
+    }
+
+    @Test
+    public void testYoloV8NonQuantIsNotQuantized() throws IOException {
+        assertTrue(
+                !isModelQuantized("yolov8nCoco_nonquant", 1),
+                "yolov8nCoco_nonquant should not be quantized");
+    }
+
+    @Test
+    public void testYoloV11IsQuantized() throws IOException {
+        assertTrue(isModelQuantized("yolov11nCoco", 2), "yolov11nCoco should be quantized");
+    }
+
+    @Test
+    public void testYoloV11NonQuantIsNotQuantized() throws IOException {
+        assertTrue(
+                !isModelQuantized("yolov11nCoco_nonquant", 2),
+                "yolov11nCoco_nonquant should not be quantized");
+    }
+
     @Test
     public void testYoloV8() {
         TFLiteResult[] expectedResults = {
