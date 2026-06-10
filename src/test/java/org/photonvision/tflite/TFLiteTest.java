@@ -260,8 +260,7 @@ public class TFLiteTest {
                 }
             }
             assertTrue(
-                    found,
-                    "Middle threshold result should be present in low threshold results: " + mid);
+                    found, "Middle threshold result should be present in low threshold results: " + mid);
         }
 
         // Exactly 2 low-threshold results should be missing from the middle-threshold set
@@ -276,15 +275,15 @@ public class TFLiteTest {
                 }
             }
             if (!found) {
-                assertTrue(
-                        missingCount < 2,
-                        "More than 2 results were filtered out by middle threshold");
+                assertTrue(missingCount < 2, "More than 2 results were filtered out by middle threshold");
                 missing[missingCount++] = low;
             }
         }
         assertTrue(
                 missingCount == 2,
-                "Exactly 2 low-threshold results should be filtered out by middle threshold, but " + missingCount + " were missing");
+                "Exactly 2 low-threshold results should be filtered out by middle threshold, but "
+                        + missingCount
+                        + " were missing");
 
         // The removed results should be the two with the lowest confidence scores
         TFLiteResult lowest1 = null;
@@ -330,8 +329,7 @@ public class TFLiteTest {
                 }
             }
             assertTrue(
-                    found,
-                    "Middle threshold result should be present in low threshold results: " + mid);
+                    found, "Middle threshold result should be present in low threshold results: " + mid);
         }
 
         // Exactly 2 low-threshold results should be missing from the middle-threshold set
@@ -346,15 +344,15 @@ public class TFLiteTest {
                 }
             }
             if (!found) {
-                assertTrue(
-                        missingCount < 2,
-                        "More than 2 results were filtered out by middle threshold");
+                assertTrue(missingCount < 2, "More than 2 results were filtered out by middle threshold");
                 missing[missingCount++] = low;
             }
         }
         assertTrue(
                 missingCount == 2,
-                "Exactly 2 low-threshold results should be filtered out by middle threshold, but " + missingCount + " were missing");
+                "Exactly 2 low-threshold results should be filtered out by middle threshold, but "
+                        + missingCount
+                        + " were missing");
 
         // The removed results should be the two with the lowest confidence scores
         TFLiteResult lowest1 = null;
@@ -395,9 +393,7 @@ public class TFLiteTest {
                     break;
                 }
             }
-            assertTrue(
-                    found,
-                    "Mid-NMS result should be present in high-NMS results: " + mid);
+            assertTrue(found, "Mid-NMS result should be present in high-NMS results: " + mid);
         }
 
         // All low-NMS results must be present in mid-NMS results
@@ -409,9 +405,7 @@ public class TFLiteTest {
                     break;
                 }
             }
-            assertTrue(
-                    found,
-                    "Low-NMS result should be present in mid-NMS results: " + low);
+            assertTrue(found, "Low-NMS result should be present in mid-NMS results: " + low);
         }
     }
 
@@ -437,9 +431,7 @@ public class TFLiteTest {
                     break;
                 }
             }
-            assertTrue(
-                    found,
-                    "Mid-NMS result should be present in high-NMS results: " + mid);
+            assertTrue(found, "Mid-NMS result should be present in high-NMS results: " + mid);
         }
 
         // All low-NMS results must be present in mid-NMS results
@@ -451,9 +443,7 @@ public class TFLiteTest {
                     break;
                 }
             }
-            assertTrue(
-                    found,
-                    "Low-NMS result should be present in mid-NMS results: " + low);
+            assertTrue(found, "Low-NMS result should be present in mid-NMS results: " + low);
         }
     }
 
