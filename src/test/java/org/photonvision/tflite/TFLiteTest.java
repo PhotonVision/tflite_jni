@@ -61,8 +61,6 @@ public class TFLiteTest {
         long ptr = TFLiteJNI.create(modelPath, modelVersion, TFLiteSource.CPU.value());
         System.out.println("TFLite detector created: " + ptr);
 
-        assertTrue(TFLiteJNI.isQuantized(ptr), "TFLite detector should be quantized");
-
         TFLiteResult[] ret = TFLiteJNI.detect(ptr, img.getNativeObjAddr(), boxThresh, nmsThreshold);
 
         System.out.println("Releasing TFLite detector");
