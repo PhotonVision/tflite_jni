@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: gradle/actions/wrapper-validation@v4
+      - uses: gradle/actions/wrapper-validation@v6
   build:
     needs: [validation]
     strategy:
@@ -90,12 +90,12 @@ jobs:
       env:
         ARTIFACTORY_API_KEY: ${{ secrets.ARTIFACTORY_API_KEY }}
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       name: Upload jar
       with:
         name: libtflite-jar-pi-${{ matrix.build-type }}-${{ matrix.platform }}
         path: ${{ github.workspace }}/build/libs/*.jar
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: libtflite-${{ matrix.build-type }}-${{ matrix.platform }}
         path: cmake_build/*.so
