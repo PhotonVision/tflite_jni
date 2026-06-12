@@ -53,6 +53,8 @@ jobs:
             platform: "linuxx86-64"
 
     runs-on: ${{ matrix.os }}
+    env:
+      SCCACHE_GHA_ENABLED: "true"
     steps:
     - uses: actions/checkout@v6
       with:
