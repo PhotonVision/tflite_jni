@@ -23,6 +23,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.io.BufferedReader;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,9 +43,25 @@ public class TFLiteTest {
     private static int platform = TFLiteSource.CPU.value();
 
     @BeforeEach
-    @org.junit.jupiter.api.condition.EnabledIf("useRubik")
     public void useRubik() {
-        platform = TFLiteSource.RUBIK.value();
+        if (System.getProperty("useRubik") != null) {
+            platform = TFLiteSource.RUBIK.value();
+            return;
+        }
+
+        try (BufferedReader reader = Files.newBufferedReader(Paths.get("/proc/device-tree/model"))) {
+            while (true) {
+                String value = reader.readLine();
+                if (value == null) {
+                    return;
+                } else if (value.contains("RUBIK")) {
+                    platform = TFLiteSource.RUBIK.value();
+                    return;
+                }
+            }
+        } catch (IOException ex) {
+            return;
+        }
     }
 
     private TFLiteResult[] runDetection(
