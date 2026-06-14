@@ -15,16 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/*
- * NOTE INTELLISENSE WILL NOT WORK UNTIL THE PROJECT IS BUILT AT LEAST ONCE
- */
-
-#include <algorithm>
 #include <cstdio>
-#include <iostream>
-#include <memory>
-#include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include <jni.h>
@@ -35,8 +26,8 @@
 #include <tensorflow/lite/delegates/external/external_delegate.h>
 #include <tensorflow/lite/version.h>
 
+#include "tflite_detector.hpp"
 #include "utils.hpp"
-#include "yoloPostProc.hpp"
 
 static jclass runtimeExceptionClass = nullptr;
 
@@ -386,32 +377,17 @@ Java_org_photonvision_tflite_TFLiteJNI_detect
   DEBUG_PRINT("INFO: Model execution time: %.2f ms\n", elapsed_time);
 #endif
 
-  std::vector<DetectResult> results;
+  std::vector<DetectResult> results = detector->post_proc(
+      boxThresh, nmsThreshold, input_img->cols, input_img->rows);
 
-  try {
-    switch (detector->version) {
-      case ModelVersion::YOLOV8:
-      case ModelVersion::YOLOV11:
-        results = yoloPostProc(interpreter, boxThresh, nmsThreshold,
-                               input_img->cols, input_img->rows);
-        break;
-      default:
-        ThrowRuntimeException(env, "Unsupported YOLO version specified");
-        return nullptr;
-    }
-
-    jobjectArray jResults =
-        env->NewObjectArray(results.size(), detectionResultClass, nullptr);
-    for (size_t i = 0; i < results.size(); ++i) {
-      jobject jDet = MakeJObject(env, results[i]);
-      env->SetObjectArrayElement(jResults, i, jDet);
-    }
-
-    return jResults;
-  } catch (const std::runtime_error& e) {
-    ThrowRuntimeException(env, e.what());
-    return nullptr;
+  jobjectArray jResults =
+      env->NewObjectArray(results.size(), detectionResultClass, nullptr);
+  for (size_t i = 0; i < results.size(); ++i) {
+    jobject jDet = MakeJObject(env, results[i]);
+    env->SetObjectArrayElement(jResults, i, jDet);
   }
+
+  return jResults;
 }
 
 /*
