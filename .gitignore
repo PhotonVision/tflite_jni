@@ -14,4 +14,4 @@ shell.nix
 
 compile_commands.json
 
-src/test/resources/images/bus_with_results.jpg
+src/test/resources/images/*_with_results.jpg

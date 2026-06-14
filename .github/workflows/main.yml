@@ -101,6 +101,12 @@ jobs:
       with:
         name: libtflite-${{ matrix.build-type }}-${{ matrix.platform }}
         path: cmake_build/*.so
+    - uses: actions/upload-artifact@v4
+      name: Upload test output image
+      with:
+        name: test_outputs-${{ matrix.build-type }}-${{ matrix.platform }}
+
+        path: src/test/resources/images/*_with_results.jpg
 
   matrix-checker:
     # This job always runs last to set the overall result based on the matrix jobs. If any matrix job failed, this job will fail.

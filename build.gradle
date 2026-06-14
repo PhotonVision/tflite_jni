@@ -76,6 +76,10 @@ test {
     if (project.hasProperty('benchmarkIterations')) {
         systemProperty 'benchmarkIterations', project.property('benchmarkIterations')
     }
+
+    if (project.hasProperty('useRubik')) {
+        systemProperty 'useRubik', ''
+    }
 }
 
 def nativeName = wpilibTools.platformMapper.platformPath
