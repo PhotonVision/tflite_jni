@@ -101,7 +101,7 @@ jobs:
       with:
         name: libtflite-${{ matrix.build-type }}-${{ matrix.platform }}
         path: cmake_build/*.so
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       name: Upload test output image
       with:
         name: test_outputs-${{ matrix.build-type }}-${{ matrix.platform }}

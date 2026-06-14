@@ -153,7 +153,7 @@ public class TFLiteTest {
             System.out.println("Results written to image and saved as " + newImagePath);
             img.release();
         } catch (IOException e) {
-            e.printStackTrace();
+            org.junit.jupiter.api.Assertions.fail("Unexpected IOException while running model test", e);
         }
     }
 
@@ -277,7 +277,7 @@ public class TFLiteTest {
                 runDetection("yolov8nCoco", "src/test/resources/images/bus.jpg", 1, 0.1, 0.45);
         assertTrue(
                 lowThreshResults.length > midThreshResults.length,
-                "Low confidence threshold (0.1) should return more detections detections than default (0.5)");
+                "Low confidence threshold (0.1) should return more detections than default (0.5)");
     }
 
     @Test
@@ -297,7 +297,7 @@ public class TFLiteTest {
                 runDetection("yolov11nCoco", "src/test/resources/images/bus.jpg", 2, 0.1, 0.45);
         assertTrue(
                 lowThreshResults.length > midThreshResults.length,
-                "Low confidence threshold (0.1) should return more detections detections than mid (0.5)");
+                "Low confidence threshold (0.1) should return more detections than mid (0.5)");
     }
 
     @Test
