@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -36,6 +37,14 @@ import org.photonvision.tflite.TFLiteJNI.TFLiteResult;
 import org.photonvision.tflite.TFLiteJNI.TFLiteSource;
 
 public class TFLiteTest {
+    private static int platform = TFLiteSource.CPU.value();
+
+    @BeforeEach
+    @org.junit.jupiter.api.condition.EnabledIf("useRubik")
+    public void useRubik() {
+        platform = TFLiteSource.RUBIK.value();
+    }
+
     private TFLiteResult[] runDetection(
             String modelName, String imagePath, int modelVersion, double boxThresh, double nmsThreshold)
             throws IOException {
@@ -58,7 +67,7 @@ public class TFLiteTest {
         System.out.println("Image loaded: " + img.size() + " " + img.type());
 
         System.out.println("Creating TFLite detector");
-        long ptr = TFLiteJNI.create(modelPath, modelVersion, TFLiteSource.CPU.value());
+        long ptr = TFLiteJNI.create(modelPath, modelVersion, platform);
         System.out.println("TFLite detector created: " + ptr);
 
         TFLiteResult[] ret = TFLiteJNI.detect(ptr, img.getNativeObjAddr(), boxThresh, nmsThreshold);
@@ -177,7 +186,7 @@ public class TFLiteTest {
                 "Native library not found at " + localSo + " (run the native build first)");
         System.load(localSo.toString());
 
-        long ptr = TFLiteJNI.create(modelPath, modelVersion, TFLiteSource.CPU.value());
+        long ptr = TFLiteJNI.create(modelPath, modelVersion, platform);
         if (ptr == 0) {
             throw new RuntimeException("Failed to create TFLite detector");
         }
@@ -419,7 +428,7 @@ public class TFLiteTest {
             // Create a TFLite detector instance
             long ptr =
                     TFLiteJNI.create(
-                            "src/test/resources/models/yolov8nCoco.tflite", 1, TFLiteSource.CPU.value());
+                            "src/test/resources/models/yolov8nCoco.tflite", 1, platform);
 
             if (ptr == 0) {
                 throw new RuntimeException("Failed to create TFLite detector");
@@ -469,7 +478,7 @@ public class TFLiteTest {
         System.out.println("Creating TFLite detector");
         long ptr =
                 TFLiteJNI.create(
-                        "src/test/resources/models/yolov8nCoco.tflite", 1, TFLiteSource.CPU.value());
+                        "src/test/resources/models/yolov8nCoco.tflite", 1, platform);
 
         if (ptr == 0) {
             throw new RuntimeException("Failed to create TFLite detector");
