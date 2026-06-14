@@ -100,7 +100,7 @@ public class TFLiteTest {
     public void testModel(
             String modelName, String imagePath, int modelVersion, TFLiteResult[] expectedResults) {
         try {
-            TFLiteResult[] ret = runDetection(modelName, imagePath, modelVersion, 0.5f, 0.45f);
+            TFLiteResult[] ret = runDetection(modelName, imagePath, modelVersion, 0.7f, 0.45f);
 
             System.out.println("Detection results: " + Arrays.toString(ret));
 
