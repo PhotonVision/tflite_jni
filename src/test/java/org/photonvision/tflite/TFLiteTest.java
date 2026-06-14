@@ -24,8 +24,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -426,9 +426,7 @@ public class TFLiteTest {
             }
 
             // Create a TFLite detector instance
-            long ptr =
-                    TFLiteJNI.create(
-                            "src/test/resources/models/yolov8nCoco.tflite", 1, platform);
+            long ptr = TFLiteJNI.create("src/test/resources/models/yolov8nCoco.tflite", 1, platform);
 
             if (ptr == 0) {
                 throw new RuntimeException("Failed to create TFLite detector");
@@ -476,9 +474,7 @@ public class TFLiteTest {
         System.out.println("Image loaded: " + img.size() + " " + img.type());
 
         System.out.println("Creating TFLite detector");
-        long ptr =
-                TFLiteJNI.create(
-                        "src/test/resources/models/yolov8nCoco.tflite", 1, platform);
+        long ptr = TFLiteJNI.create("src/test/resources/models/yolov8nCoco.tflite", 1, platform);
 
         if (ptr == 0) {
             throw new RuntimeException("Failed to create TFLite detector");
