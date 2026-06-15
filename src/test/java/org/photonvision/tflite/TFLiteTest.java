@@ -108,8 +108,10 @@ public class TFLiteTest {
 
             // We can't guarantee expected results will be in the same order on every platform so just
             // check the length is the same and check each result is there somewhere
-            // See https://github.com/PhotonVision/tflite_jni/pull/35#issuecomment-4423522333 for why we
-            // need to tolerance the results like this
+            // We need to tolerance results and check for differing order due to how quantization behaves
+            // on different platforms, see these issues:
+            // https://github.com/ultralytics/ultralytics/issues/9562
+            // https://github.com/tensorflow/tflite-micro/issues/2629
             assertTrue(ret.length == expectedResults.length, "Results should be the same length");
 
             boolean[] matched = new boolean[ret.length];
