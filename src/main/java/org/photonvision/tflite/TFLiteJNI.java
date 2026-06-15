@@ -23,7 +23,7 @@ import org.opencv.core.Size;
 
 public class TFLiteJNI {
     public static enum TFLiteSource {
-        RUBIK(1),
+        QNN(1),
         CPU(2);
 
         private int value = 0;
