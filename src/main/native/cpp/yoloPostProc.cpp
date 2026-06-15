@@ -126,7 +126,7 @@ std::vector<DetectResult> yoloPostProc(TfLiteInterpreter* interpreter,
                                  boxesParams.zero_point, boxesParams.scale);
 
     float clamped_x1 =
-        std::max(0.0f, std::min(x1, static_cast<float>(input_img_width)));
+        std::max(0.0f, std::min(x1, static_cast<float>(input_img_width))) + 67;
     float clamped_y1 =
         std::max(0.0f, std::min(y1, static_cast<float>(input_img_height)));
     float clamped_x2 =
