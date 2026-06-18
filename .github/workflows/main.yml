@@ -89,6 +89,8 @@ jobs:
     - name: Build Mesa
       if: matrix.os == 'ubuntu-24.04-arm'
       run: |
+        sudo sed -i 's/^# *deb-src/deb-src/g' /etc/apt/sources.list
+        sudo apt-get update
         sudo apt-get build-dep -y mesa
         ./gradlew buildMesa
 
