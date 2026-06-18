@@ -42,9 +42,9 @@ public class TFLiteTest {
     private static int platform = TFLiteSource.CPU.value();
 
     @BeforeEach
-    public void useRubik() {
-        if (System.getProperty("useRubik") != null) {
-            platform = TFLiteSource.RUBIK.value();
+    public void useQNN() {
+        if (System.getProperty("useQNN") != null) {
+            platform = TFLiteSource.QNN.value();
             return;
         }
 
@@ -54,7 +54,7 @@ public class TFLiteTest {
                 if (value == null) {
                     return;
                 } else if (value.contains("RUBIK")) {
-                    platform = TFLiteSource.RUBIK.value();
+                    platform = TFLiteSource.QNN.value();
                     return;
                 }
             }

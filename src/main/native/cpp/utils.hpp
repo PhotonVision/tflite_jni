@@ -31,7 +31,7 @@ enum ModelVersion { YOLOV8 = 1, YOLOV11 = 2 };
 /**
  * Where should TFLite run inference.
  */
-enum TFLiteSource { NONE = 0, RUBIK = 1, CPU = 2, NUM_SOURCES = 3 };
+enum TFLiteSource { NONE = 0, QNN = 1, CPU = 2, NUM_SOURCES = 3 };
 
 inline bool uses_external_delegate(TFLiteSource source) {
   return source != CPU;

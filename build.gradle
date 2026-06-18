@@ -77,8 +77,8 @@ test {
         systemProperty 'benchmarkIterations', project.property('benchmarkIterations')
     }
 
-    if (project.hasProperty('useRubik')) {
-        systemProperty 'useRubik', ''
+    if (project.hasProperty('useQNN')) {
+        systemProperty 'useQNN', ''
     }
 }
 
