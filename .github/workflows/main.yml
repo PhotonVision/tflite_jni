@@ -87,7 +87,7 @@ jobs:
       run: ./gradlew build
 
     - name: Publish
-      if: ${{ matrix.build-type }} == Release
+      if: matrix.build-type  == 'Release'
       run: |
         ./gradlew build ${{ (startsWith(github.event_name, 'push') && 'publish') || '' }} -PArchOverride=${{ matrix.platform }} -PPublishType=${{ matrix.build-type != 'Release' && matrix.build-type || '' }} -x check
       env:
