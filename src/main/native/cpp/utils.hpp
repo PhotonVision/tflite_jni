@@ -17,25 +17,14 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
 #include <vector>
 
+#include <opencv2/imgproc.hpp>
+#include <opencv2/opencv.hpp>
 #include <tensorflow/lite/c/c_api.h>
-
-/**
- * Enumeration of model versions. This matches the enum in the Java code, and
- * when one is updated the other should be as well. Note that YOLOV5 is omitted
- * since it is not supported.
- */
-enum ModelVersion { YOLOV8 = 1, YOLOV11 = 2 };
-
-/**
- * Where should TFLite run inference.
- */
-enum TFLiteSource { NONE = 0, QNN = 1, CPU = 2, NUM_SOURCES = 3 };
-
-inline bool uses_external_delegate(TFLiteSource source) {
-  return source != CPU;
-}
 
 /**
  * Structure representing a bounding box.
@@ -50,22 +39,6 @@ struct BoundingBox {
   int x2;
   int y2;
   double angle;
-};
-
-/**
- * Structure representing a TFLite detector instance.
- *
- * interpreter: Pointer to the TensorFlow Lite interpreter.
- * delegate: Pointer to the TensorFlow Lite delegate (if any).
- * model: Pointer to the TensorFlow Lite model.
- * version: The version of the model being used.
- */
-struct TFLiteDetector {
-  TfLiteInterpreter* interpreter;
-  TfLiteDelegate* delegate;
-  TfLiteModel* model;
-  TFLiteSource source;
-  ModelVersion version;
 };
 
 /**
@@ -112,11 +85,64 @@ float get_dequant_value(void* data, TfLiteType tensor_type, int idx,
 bool tensor_image_dims(const TfLiteTensor* tensor, int* w, int* h, int* c);
 
 /**
- * Performs Non-Maximum Suppression (NMS) on a list of detection results.
- *
- * @param candidates The list of detection candidates.
- * @param nmsThreshold The IoU threshold for suppression.
- * @return A vector of filtered detection results.
+ * Calculates the Intersection over Union (IoU) between two bounding boxes.
+ * Supports both axis-aligned and oriented bounding boxes.
+ * @param box1 The first bounding box.
+ * @param box2 The second bounding box.
+ * @return The IoU value between 0 and 1.
  */
-std::vector<DetectResult> optimizedNMS(std::vector<DetectResult>& candidates,
-                                       float nmsThreshold);
+inline float calculateIoU(const BoundingBox& box1, const BoundingBox& box2) {
+  // Optimization: If both angles are effectively zero, use faster AABB
+  // calculation
+  if (std::abs(box1.angle) < 0.1 && std::abs(box2.angle) < 0.1) {
+    const int x1 = std::max(box1.x1, box2.x1);
+    const int y1 = std::max(box1.y1, box2.y1);
+    const int x2 = std::min(box1.x2, box2.x2);
+    const int y2 = std::min(box1.y2, box2.y2);
+
+    // No intersection case
+    if (x2 <= x1 || y2 <= y1) {
+      return 0.0f;
+    }
+
+    const float intersectionArea = static_cast<float>((x2 - x1) * (y2 - y1));
+    const float area1 =
+        static_cast<float>((box1.x2 - box1.x1) * (box1.y2 - box1.y1));
+    const float area2 =
+        static_cast<float>((box2.x2 - box2.x1) * (box2.y2 - box2.y1));
+
+    return intersectionArea / (area1 + area2 - intersectionArea);
+  }
+
+  // OBB IoU using OpenCV
+  float w1 = static_cast<float>(box1.x2 - box1.x1);
+  float h1 = static_cast<float>(box1.y2 - box1.y1);
+  float cx1 = box1.x1 + w1 * 0.5f;
+  float cy1 = box1.y1 + h1 * 0.5f;
+
+  float w2 = static_cast<float>(box2.x2 - box2.x1);
+  float h2 = static_cast<float>(box2.y2 - box2.y1);
+  float cx2 = box2.x1 + w2 * 0.5f;
+  float cy2 = box2.y1 + h2 * 0.5f;
+
+  cv::RotatedRect r1(cv::Point2f(cx1, cy1), cv::Size2f(w1, h1),
+                     static_cast<float>(box1.angle));
+  cv::RotatedRect r2(cv::Point2f(cx2, cy2), cv::Size2f(w2, h2),
+                     static_cast<float>(box2.angle));
+
+  std::vector<cv::Point2f> intersectionPoints;
+  int res = cv::rotatedRectangleIntersection(r1, r2, intersectionPoints);
+
+  float intersectionArea = 0.0f;
+  if (res != cv::INTERSECT_NONE && !intersectionPoints.empty()) {
+    intersectionArea = static_cast<float>(cv::contourArea(intersectionPoints));
+  }
+
+  float area1 = w1 * h1;
+  float area2 = w2 * h2;
+  float unionArea = area1 + area2 - intersectionArea;
+
+  if (unionArea <= 1e-5f) return 0.0f;
+
+  return intersectionArea / unionArea;
+}
