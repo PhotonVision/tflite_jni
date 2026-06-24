@@ -181,33 +181,44 @@ Java_org_photonvision_tflite_TFLiteJNI_create
     // Create external delegate options
     // We just have to trust that this creates okay, but conveniently if it
     // fails the check when we insert options will catch it.
-    TfLiteExternalDelegateOptions delegateOptsValue =
-        TfLiteExternalDelegateOptionsDefault("libQnnTFLiteDelegate.so");
+    TfLiteExternalDelegateOptions delegateOptsValue;
+    TfLiteExternalDelegateOptions* delegateOpts;
+    if (tflite_source == QNN) {
+      delegateOptsValue =
+          TfLiteExternalDelegateOptionsDefault("libQnnTFLiteDelegate.so");
 
-    TfLiteExternalDelegateOptions* delegateOpts = &delegateOptsValue;
+      delegateOpts = &delegateOptsValue;
 
-    // See
-    // https://docs.qualcomm.com/bundle/publicresource/topics/80-70014-54/external-delegate-options-for-qnn-delegate.html
-    // for what the various delegate options are
-    if (TfLiteExternalDelegateOptionsInsert(delegateOpts, "backend_type",
-                                            "htp") != kTfLiteOk) {
-      ThrowRuntimeException(env, "Failed to set backend type to htp");
-      env->ReleaseStringUTFChars(modelPath, model_name);
-      return 0;
-    }
+      // See
+      // https://docs.qualcomm.com/bundle/publicresource/topics/80-70014-54/external-delegate-options-for-qnn-delegate.html
+      // for what the various delegate options are
+      if (TfLiteExternalDelegateOptionsInsert(delegateOpts, "backend_type",
+                                              "htp") != kTfLiteOk) {
+        ThrowRuntimeException(env, "Failed to set backend type to htp");
+        env->ReleaseStringUTFChars(modelPath, model_name);
+        return 0;
+      }
 
-    if (TfLiteExternalDelegateOptionsInsert(delegateOpts, "htp_use_conv_hmx",
-                                            "1") != kTfLiteOk) {
-      ThrowRuntimeException(env, "Failed to enable convolutions");
-      env->ReleaseStringUTFChars(modelPath, model_name);
-      return 0;
-    }
+      if (TfLiteExternalDelegateOptionsInsert(delegateOpts, "htp_use_conv_hmx",
+                                              "1") != kTfLiteOk) {
+        ThrowRuntimeException(env, "Failed to enable convolutions");
+        env->ReleaseStringUTFChars(modelPath, model_name);
+        return 0;
+      }
 
-    if (TfLiteExternalDelegateOptionsInsert(
-            delegateOpts, "htp_performance_mode", "2") != kTfLiteOk) {
-      ThrowRuntimeException(env, "Failed to set htp performance mode");
-      env->ReleaseStringUTFChars(modelPath, model_name);
-      return 0;
+      if (TfLiteExternalDelegateOptionsInsert(
+              delegateOpts, "htp_performance_mode", "2") != kTfLiteOk) {
+        ThrowRuntimeException(env, "Failed to set htp performance mode");
+        env->ReleaseStringUTFChars(modelPath, model_name);
+        return 0;
+      }
+    } else if (tflite_source == MESA) {
+      delegateOptsValue = TfLiteExternalDelegateOptionsDefault(
+          "/opt/photonvision/libteflon.so");
+
+      delegateOpts = &delegateOptsValue;
+    } else {
+      ThrowRuntimeException(env, "Invalid source, no delegate found.");
     }
 
     // Create the delegate
